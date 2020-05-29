@@ -1,1 +1,0 @@
-I-A_GaitCycle,I-B_Step,I-C_StandingStill,II-A_Upwards,II-B_Centred,II-C_Downwards,II-D_NoIntentionalMotion,II-E_TorsoRotation,III-A_Right,III-B_Left,III-C_NoArms,IV-A_BulkyUnit,IV-B_HandyUnit,IV-C_UtilityAux,IV-D_Cart,IV-E_Computer,IV-F_NoItem,V-A_None,VI-A_Error
