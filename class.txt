@@ -1,0 +1,1 @@
+C1_Standing,C2_Walking,C3_Cart,C4_Handling(upwards),C5_Handling(centred),C6_Handling(downwards),C7_Synchronization,C8_None
