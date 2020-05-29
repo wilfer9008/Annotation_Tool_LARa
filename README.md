@@ -6,6 +6,8 @@ Updating in progress.
 # Annotation_Tool_LARa
 Annotation_Tool_LARa
 
+![Annotation Tool](AnnotationTool.png)
+
 ## Prerequisites
 The implementation is done in Python:
 - torch
