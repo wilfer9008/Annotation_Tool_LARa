@@ -3,6 +3,10 @@ Implementation code for the Annotation Tool that is using for LARa dataset.
 
 Updating in progress.
 
+## Abstract
+
+Optimizations in logistics require recognition and analysis of human activities. The potential of sensor-based human activity recognition (HAR) in logistics are not yet well explored. One reason is the lack of specific data. Although there has been a significant increase in HAR datasets in the past twenty years, no available dataset depicts activities in logistics. This contribution presents the first freely accessible logistics-dataset. In the 'Innovationlab Hybrid Services in Logistics' at TU Dortmund University, two picking and one packing scenarios with 14 subjects were recorded using OMoCap, IMUs, and an RGB camera. 758 minutes of recordings were labeled by 12 annotators in 474 person-hours. The subsequent revision was carried out by 4 revisers in 143 person-hours. All the given data have been labeled and categorized into 8 activity classes and $19$ binary coarse-semantic descriptions, also called attributes. The dataset is deployed for solving HAR using deep networks.
+
 # Annotation_Tool_LARa
 Annotation_Tool_LARa
 
