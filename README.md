@@ -16,3 +16,8 @@ Annotation_Tool_LARa
 The implementation is done in Python:
 - torch
 - numpy
+
+## Example
+
+Running the `main.py` script in Annotation_Tool_LARa. 
+- For using the tCNNs for predicting activities classes. Download the 'class_network.pt' and 'attr_network.pt' from LARa dataset. Store the networks in Annotation_Tool_LARa/networks/
