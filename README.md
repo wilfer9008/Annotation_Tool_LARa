@@ -25,4 +25,6 @@ LARa dataset can be downloaded in https://zenodo.org/record/3862782#.XtVJOy9h3UI
 
 Running the `main.py` script in Annotation_Tool_LARa. 
 - For using the tCNNs for predicting activities classes, download the 'class_network.pt' and 'attr_network.pt' from LARa dataset. 
-- Store the networks in Annotation_Tool_LARa/networks/
+- Store the networks 'class_network.pt' and 'attr_network.pt' in Annotation_Tool_LARa/networks/
+  Annotation_Tool_LARa/networks/class_network.pt
+  Annotation_Tool_LARa/networks/attr_network.pt
