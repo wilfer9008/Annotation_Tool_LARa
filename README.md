@@ -17,6 +17,10 @@ The implementation is done in Python:
 - torch
 - numpy
 
+## Dataset
+
+LARa dataset can be downloaded in https://zenodo.org/record/3862782#.XtVJOy9h3UI
+
 ## Example
 
 Running the `main.py` script in Annotation_Tool_LARa. 
