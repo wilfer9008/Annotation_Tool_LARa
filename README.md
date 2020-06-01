@@ -29,5 +29,9 @@ Running the `main.py` script in Annotation_Tool_LARa.
   Annotation_Tool_LARa/networks/class_network.pt
   Annotation_Tool_LARa/networks/attr_network.pt
   
+
+  - Erik Altermann        erik.altermann@tu-dortmund.de
+  - Fernando Moya Rueda   fernando.moya@tu-dortmund.de
+  
   
 The work on this publication was supported by Deutsche Forschungsgemeinschaft (DFG) in the context of the project Fi799/10-2, HO2403/14-2 ''Transfer Learning for Human Activity Recognition in Logistics''.
