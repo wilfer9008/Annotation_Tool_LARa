@@ -16,6 +16,7 @@ Annotation_Tool_LARa
 The implementation is done in Python:
 - torch
 - numpy
+- PyQt5
 
 ## Dataset
 
