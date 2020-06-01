@@ -35,6 +35,7 @@ Running the `main.py` script in Annotation_Tool_LARa.
 
   - Erik Altermann        erik.altermann@tu-dortmund.de
   - Fernando Moya Rueda   fernando.moya@tu-dortmund.de
+  
 Technische University of Dortmund
 Department of Computer Science
 Dortmund, Germany
