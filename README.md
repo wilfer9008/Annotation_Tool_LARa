@@ -1,5 +1,5 @@
 # Logistic Activity Recognition Challenge (LARa) 
-Implementation code for the Annotation Tool that is using for LARa dataset, which is published [Logistic Activity Recognition Challenge (LARa) – A Motion Capture and Inertial Measurement Dataset]
+Implementation code for the Annotation Tool that is used for LARa dataset, which is published [Logistic Activity Recognition Challenge (LARa) – A Motion Capture and Inertial Measurement Dataset]
 
 Updating in progress.
 
