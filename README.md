@@ -30,7 +30,7 @@ Running the `main.py` script in Annotation_Tool_LARa.
   Annotation_Tool_LARa/networks/attr_network.pt
   
 
-## 
+## Contact
 
   - Erik Altermann        erik.altermann@tu-dortmund.de
   - Fernando Moya Rueda   fernando.moya@tu-dortmund.de
