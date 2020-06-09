@@ -7,6 +7,7 @@ Updating in progress.
 Annotation_Tool_LARa
 
 ![Annotation Tool](AnnotationTool.png)
+![Annotation Tool Predictions](AnnotationTool_predictions.png)
 
 ## Prerequisites
 The implementation is done in Python:
