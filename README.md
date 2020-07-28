@@ -1,5 +1,5 @@
 # Logistic Activity Recognition Challenge (LARa) 
-Implementation code for the Annotation Tool that is used for LARa dataset, presented in the Journal "LARa: Creating a Dataset for Human Activity Recognition in Logistics Using Semantic Attributes", see https://www.mdpi.com/1424-8220/20/15/4083#cite
+Implementation code for the Annotation Tool that is used for LARa dataset, presented in the Journal "LARa: Creating a Dataset for Human Activity Recognition in Logistics Using Semantic Attributes", see https://www.mdpi.com/1424-8220/20/15/4083
 
 Updating in progress.
 
