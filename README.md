@@ -3,12 +3,6 @@ Implementation code for the Annotation Tool that is used for LARa dataset, prese
 
 Updating in progress.
 
-# Annotation_Tool_LARa
-Annotation_Tool_LARa
-
-![Annotation Tool](AnnotationTool.png)
-![Annotation Tool Predictions](AnnotationTool_predictions.png)
-
 ## Prerequisites
 The implementation is done in Python:
 - torch
@@ -39,3 +33,10 @@ Dortmund, Germany
   
   
 The work on this publication was supported by Deutsche Forschungsgemeinschaft (DFG) in the context of the project Fi799/10-2, HO2403/14-2 ''Transfer Learning for Human Activity Recognition in Logistics''.
+
+# Annotation_Tool_LARa
+Annotation_Tool_LARa
+
+![Annotation Tool](AnnotationTool.png)
+![Annotation Tool Predictions](AnnotationTool_predictions.png)
+
