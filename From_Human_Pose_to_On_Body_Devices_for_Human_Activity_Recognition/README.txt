@@ -1,1 +1,0 @@
-Code for From Human Pose to On Body Devices for Human Activity Recognition
