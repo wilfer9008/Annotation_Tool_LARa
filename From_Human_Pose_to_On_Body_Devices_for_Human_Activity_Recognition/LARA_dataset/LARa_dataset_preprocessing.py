@@ -820,7 +820,7 @@ def create_dataset(half = False, identity_bool = False):
 
     all_data = ["S01", "S02", "S03", "S04", "S05", "S06", "S07", "S08", "S09", "S10", "S11", "S12", "S13", "S14"]
 
-    general_statistics(train_ids)
+    #general_statistics(train_ids)
 
     if half:
         base_directory = '/data/fmoya/HAR/datasets/MoCap_dataset_half_freq/'
