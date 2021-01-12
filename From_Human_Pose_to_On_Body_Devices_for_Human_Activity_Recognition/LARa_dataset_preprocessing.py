@@ -11,19 +11,9 @@ import numpy as np
 import csv_reader
 from sliding_window import sliding_window
 import pickle
-import scipy.interpolate
 
-from attributes import Attributes
 
-import csv
-
-#from HARwindows import HARWindows
-
-import matplotlib.pyplot as plt 
-from matplotlib import cm
-from mpl_toolkits.mplot3d import Axes3D
-
-from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
 
 from scipy.stats import norm, mode
 
