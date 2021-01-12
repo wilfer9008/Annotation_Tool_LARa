@@ -1,7 +1,8 @@
 '''
 Created on May 18, 2019
 
-@author: fmoya
+@author: fernando moya rueda
+@email: fernando.moya@tu-dortmund.de
 '''
 
 import os
@@ -18,8 +19,8 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm, mode
 
 
-#folder path
-#FOLDER_PATH = path_to_dataset
+#folder path of the dataset
+FOLDER_PATH = "path_to_dataset"
 
 # Hardcoded number of sensor channels employed in the MoCap dataset
 NB_SENSOR_CHANNELS = 134
@@ -109,7 +110,6 @@ labels_persons = {"S01": 0, "S02": 1, "S03": 2, "S04": 3, "S05": 4, "S06": 5, "S
                   "S10": 9, "S11": 10, "S12": 11, "S13": 12, "S14": 13, "S15": 14, "S16": 15}
 
 
-
 def select_columns_opp(data):
     """Selection of the columns employed in the MoCAP
     excluding the measurements from lower back,
@@ -128,10 +128,6 @@ def select_columns_opp(data):
     
     return np.delete(data, features_delete, 1)
 
-
-
-
-
 def divide_x_y(data):
     """Segments each sample into features and label
 
@@ -146,9 +142,6 @@ def divide_x_y(data):
     
 
     return data_t, data_x, data_y
-
-
-
 
 def normalize(data):
     """Normalizes all sensor channels
@@ -586,9 +579,8 @@ def compute_statistics_samples(ids, boolean_classes=True, attr=0):
 def generate_data(ids, sliding_window_length, sliding_window_step, data_dir = None, half = False,
                   identity_bool = False, usage_modus = 'train'):
     '''
-    creates files for each of the sequences extracted from a file
+    creates files for each of the sequences, which are extracted from a file
     following a sliding window approach
-    
     
     returns a numpy array
     
@@ -767,7 +759,12 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir = No
 
 
 def generate_CSV(csv_dir, data_dir):
-    
+    '''
+    Generate CSV file with path to all (Training) of the segmented sequences
+
+    @param csv_dir: Path to the dataset
+    @param data_dir: Path of the training data
+    '''
     f = []
     for dirpath, dirnames, filenames in os.walk(data_dir):
         for n in range(len(filenames)):
@@ -775,10 +772,16 @@ def generate_CSV(csv_dir, data_dir):
 
     np.savetxt(csv_dir, f, delimiter="\n", fmt='%s')
     
-    return f
-
+    return
 
 def generate_CSV_final(csv_dir, data_dir1, data_dir2):
+    '''
+    Generate CSV file with path to all (Training and Validation) of the segmented sequences
+
+    @param csv_dir: Path to the dataset
+    @param data_dir1: Path of the training data
+    @param data_dir2: Path of the validation data
+    '''
     f = []
     for dirpath, dirnames, filenames in os.walk(data_dir1):
         for n in range(len(filenames)):
@@ -790,12 +793,14 @@ def generate_CSV_final(csv_dir, data_dir1, data_dir2):
 
     np.savetxt(csv_dir, f, delimiter="\n", fmt='%s')
 
-    return f
-
-
-
+    return
 
 def general_statistics(ids):
+    '''
+    Computing min duration of activity classes
+
+    @param ids: IDS for subjects in the dataset.
+    '''
     #compute_max_min(ids)
     attr_check = 19
     min_durations = compute_min_num_samples(ids, boolean_classes=False, attr=attr_check)
@@ -804,15 +809,18 @@ def general_statistics(ids):
 
     print("Minimum per class {}".format(min_durations))
     print("Minimum ordered {}".format(np.sort(min_durations)))
-    # Remember to exclude the values for non as it wont be considered.
-    # The minimal size will be extended 25%, so still for a window
-    # there will be a 75% of a single class.
-    # For now the class walking has the shortest duration
-    # with 43 samples. The window size will be selected as 54
     return
 
 
-def create_dataset(half = False, identity_bool = False):
+def create_dataset(half=False):
+    '''
+    create dataset
+    - Segmentation
+    - Storing sequences
+
+    @param half: set for creating dataset with half the frequence.
+    '''
+
     train_ids = ["S01", "S02", "S03", "S04", "S07", "S08", "S09", "S10", "S15", "S16"]
     train_final_ids = ["S01", "S02", "S03", "S04", "S05", "S07", "S08", "S09", "S10" "S11", "S12", "S15", "S16"]
     val_ids = ["S05", "S11", "S12"]
@@ -823,10 +831,12 @@ def create_dataset(half = False, identity_bool = False):
     #general_statistics(train_ids)
 
     if half:
+        "Path to the segmented sequences"
         base_directory = '/data/fmoya/HAR/datasets/MoCap_dataset_half_freq/'
         sliding_window_length = 100
         sliding_window_step = 12
     else:
+        "Path to the segmented sequences"
         base_directory = '/data/fmoya/HAR/datasets/MoCap_dataset/'
         sliding_window_length = 200
         sliding_window_step = 25
@@ -835,14 +845,13 @@ def create_dataset(half = False, identity_bool = False):
     data_dir_val = base_directory + 'sequences_val/'
     data_dir_test = base_directory + 'sequences_test/'
 
-
     generate_data(train_ids, sliding_window_length=sliding_window_length,
                   sliding_window_step=sliding_window_step, data_dir=data_dir_train, half=half,
                   identity_bool=identity_bool, usage_modus='train')
     generate_data(val_ids, sliding_window_length=sliding_window_length,
-                  sliding_window_step=sliding_window_step, data_dir=data_dir_val, half = half)
+                  sliding_window_step=sliding_window_step, data_dir=data_dir_val, half=half)
     generate_data(test_ids, sliding_window_length=sliding_window_length,
-                  sliding_window_step=sliding_window_step, data_dir=data_dir_test, half = half)
+                  sliding_window_step=sliding_window_step, data_dir=data_dir_test, half=half)
 
     generate_CSV(base_directory + "train.csv", data_dir_train)
     generate_CSV(base_directory + "val.csv", data_dir_val)
@@ -855,6 +864,6 @@ def create_dataset(half = False, identity_bool = False):
 
 if __name__ == '__main__':
 
-    create_dataset(half=False, identity_bool=True)
+    create_dataset(half=False)
 
     print("Done")
