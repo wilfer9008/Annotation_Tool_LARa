@@ -14,7 +14,6 @@ from logging import handlers
 
 from modus_selecter import Modus_Selecter
 
-
 import datetime
 
 
@@ -215,9 +214,6 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
     return configuration
 
 
-
-
-
 def setup_experiment_logger(logging_level=logging.DEBUG, filename=None):
     # set up the logging
     logging_format = '[%(asctime)-19s, %(name)s, %(levelname)s] %(message)s'
@@ -246,9 +242,6 @@ def setup_experiment_logger(logging_level=logging.DEBUG, filename=None):
 
 def pamap2_main():
 
-    #dataset = {0 : 'locomotion', 1 : 'gesture', 2 : 'carrots', 3 : 'pamap2', 4 : 'orderpicking',
-    # 5 : 'virtual', 6 : 'mocap_half', 7 : 'virtual_quarter', 8 : 'mocap_quarter', 9 : 'mbientlab_quarter'}
-    # 10 : 'mbientlab'}
     datasets_opts = [3]
     networks_arc = [2]
     fine_tunings = [10]
@@ -272,10 +265,6 @@ def pamap2_main():
 
 
 def locomotion_main():
-
-    #dataset = {0 : 'locomotion', 1 : 'gesture', 2 : 'carrots', 3 : 'pamap2', 4 : 'orderpicking',
-    # 5 : 'virtual', 6 : 'mocap_half', 7 : 'virtual_quarter', 8 : 'mocap_quarter', 9 : 'mbientlab_quarter'}
-    # 10 : 'mbientlab'}
     
     datasets_opts = [0]
     networks_arc = [0]
@@ -298,10 +287,6 @@ def locomotion_main():
     return
 
 def gestures_main():
-
-    #dataset = {0 : 'locomotion', 1 : 'gesture', 2 : 'carrots', 3 : 'pamap2', 4 : 'orderpicking',
-    # 5 : 'virtual', 6 : 'mocap_half', 7 : 'virtual_quarter', 8 : 'mocap_quarter', 9 : 'mbientlab_quarter'}
-    # 10 : 'mbientlab'}
     
     datasets_opts = [1]
     networks_arc = [0]
