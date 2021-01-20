@@ -10,7 +10,7 @@ from PyQt5.QtGui import QIntValidator
 import pyqtgraph as pg
 
 from data_management import Data_processor
-import data_management
+
 from PyQt5.QtCore import QThread
 import os
 #from main import IO_Controller
@@ -278,7 +278,7 @@ class settingsDialog(QtWidgets.QDialog):
             g.settings[lineSetting] = lineEdit.text()
         
         
-        with open('..'+os.sep+'settings.json', 'w') as f:
+        with open(g.settings_path, 'w') as f:
             json.dump(g.settings, f)
         
         
@@ -353,7 +353,7 @@ class enterIDDialog(QtWidgets.QDialog):
         tries = self.triesSpinBox.value()
         
         if (annotatorID != '') and (tries != ''):
-            self.io_controller.saveID(annotatorID,tries)
+            self.io_controller.save_id(annotatorID,tries)
             self.accept()
         else:
             if annotatorID == '':
@@ -458,10 +458,15 @@ class open_file_dialog(QtWidgets.QDialog):
         self.scratch_button.clicked.connect(lambda _: self.set_load_backup(False))
         
         self.new_button = self.findChild(QtWidgets.QRadioButton, "new_radioButton")
+        self.new_button.clicked.connect(lambda _: self.scratch_button.setText("Start from Scratch"))
+        self.new_button.clicked.connect(lambda _: self.backup_button.setText("Load Backup"))
+        
         self.annotated_button = self.findChild(QtWidgets.QRadioButton, "annotated_radioButton")
+        self.annotated_button.clicked.connect(lambda _: self.scratch_button.setText("Load original labels"))
+        self.annotated_button.clicked.connect(lambda _: self.backup_button.setText("Load modified labels"))
         
         self.buttonBox = self.findChild(QtWidgets.QDialogButtonBox, 'buttonBox')
-        self.ok_button = self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok) 
+        self.ok_button = self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
         self.ok_button.setEnabled(False)
         
     def set_load_backup(self, load):
@@ -522,17 +527,28 @@ class open_file_dialog(QtWidgets.QDialog):
         return QtWidgets.QDialog.accept(self, *args, **kwargs)
     
         
-        
-                
-        
-        
-        
-        
-        
-        
-        
+class Plot_Dialog(QtWidgets.QDialog):
+    """
+    example code:
+        dlg = Plot_Dialog(QWidget)
+        _ = dlg.exec_()
+    
+    """
+    
+    def __init__(self,parent:QtWidgets.QWidget = None): 
+        """Initializes the dialog and sets up the gui
 
-
-
+        Arguments:
+        ----------
+        parent : QWidget
+            parent widget of this dialog
+        ----------
+        """
+        
+        super(Plot_Dialog, self).__init__(parent)
+        uic.loadUi('..'+os.sep+'plotwindow.ui', self)
+        
+    def graph_widget(self):
+        return self.findChild(pg.PlotWidget, 'plot')
 
 

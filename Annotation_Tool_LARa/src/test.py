@@ -36,6 +36,7 @@ def check_loading(file,model):
 class_network = 'class_network.pt'
 attr_network = "attrib_network.pt"
 cnn_imu_network = 'cnn_imu_network.pt'
+cnn_imu_retrained_network = 'cnn_imu_retrained_network.pt'
 
 #check_config_keys(class_network)
 #check_config_keys(attr_network)
@@ -60,14 +61,17 @@ print("loading attr network with Network_ successful")
 
 att_rep = np.loadtxt("atts_per_class_dataset.txt",dtype = np.int,delimiter = ",")
 
-checkpoint = torch.load('..'+os.sep+'networks'+os.sep+attr_network)
+checkpoint = torch.load('..'+os.sep+'networks'+os.sep+attr_network, map_location=torch.device('cpu'))
 checkpoint['att_rep'] = att_rep
 torch.save(checkpoint, '..'+os.sep+'networks'+os.sep+attr_network)
 
-checkpoint = torch.load('..'+os.sep+'networks'+os.sep+cnn_imu_network)
+checkpoint = torch.load('..'+os.sep+'networks'+os.sep+cnn_imu_network, map_location=torch.device('cpu'))
 checkpoint['att_rep'] = att_rep
 torch.save(checkpoint, '..'+os.sep+'networks'+os.sep+cnn_imu_network)
 
+checkpoint = torch.load('..'+os.sep+'networks'+os.sep+cnn_imu_retrained_network, map_location=torch.device('cpu'))
+checkpoint['att_rep'] = att_rep
+torch.save(checkpoint, '..'+os.sep+'networks'+os.sep+cnn_imu_retrained_network)
 
 att_rep = checkpoint['att_rep']
 print(att_rep.shape)

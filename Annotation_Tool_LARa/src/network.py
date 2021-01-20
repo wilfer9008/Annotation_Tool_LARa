@@ -29,6 +29,8 @@ class Network(nn.Module):
         
         super(Network, self).__init__()
         
+        self.deep_rep = False
+        
         logging.info('            Network: Constructor')
         
         self.config = config
@@ -461,6 +463,10 @@ class Network(nn.Module):
             x = F.dropout(x, training=self.training)
             x = F.relu(self.fc4(x))
             x = F.dropout(x, training=self.training)
+            
+            if self.deep_rep:
+                deep_fc2 = x.clone().detach()
+            
             x = self.fc5(x)
             x = self.avgpool(x)
             x = x.view(x.size()[0], x.size()[1], x.size()[2])
@@ -469,6 +475,10 @@ class Network(nn.Module):
             x = F.dropout(x, training=self.training)
             x = F.relu(self.fc4(x))
             x = F.dropout(x, training=self.training)
+            
+            if self.deep_rep:
+                deep_fc2 = x.clone().detach()
+            
             x = self.fc5(x)
 
         if self.config['output'] == 'attribute':
@@ -477,8 +487,11 @@ class Network(nn.Module):
         if not self.training:
             if self.config['output'] == 'softmax':
                 x = self.softmax(x)
-
-        return x
+        
+        if self.deep_rep:
+            return x, deep_fc2
+        else:
+            return x
         #return x11.clone(), x12.clone(), x21.clone(), x22.clone(), x
     
     

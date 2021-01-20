@@ -85,11 +85,18 @@ class Prediction_Revision_Controller(Controller):
             
     def reload(self):
         #print("reloading prediction revision mode")
+        frame = self.gui.get_current_frame()
+        
         if g.data is not None: 
             self.class_graph_0.reload_classes(g.data.windows)
             
-            
-            
+        graphs = [self.class_graph_0, self.class_graph_1, 
+                  self.class_graph_2, self.class_graph_3]
+        for graph in graphs:
+                graph.update_frame_lines(play=frame)
+        
+        
+        
         if g.data is not None \
                 and g.data.windows_1 is not None \
                 and g.data.windows_1.__len__() >0:
@@ -98,8 +105,8 @@ class Prediction_Revision_Controller(Controller):
             windows = [g.data.windows_1, g.data.windows_2, g.data.windows_3]
             for graph,window in zip(graphs,windows):
                 graph.reload_classes(window)
-            
-            self.select_window_by_frame()
+                
+            self.select_window_by_frame(frame)
             self.highlight_class_bar(self.current_window)
             self.update_labels()
             self.use_predictions_button.setEnabled(True)
@@ -129,7 +136,7 @@ class Prediction_Revision_Controller(Controller):
     def class_window_index(self,frame):
         """"""
         if frame is None:
-            frame = self.gui.getCurrentFrame()
+            frame = self.gui.get_current_frame()
         #print("class_window_index")
         class_0_index = None
         class_1_index = None
@@ -154,7 +161,7 @@ class Prediction_Revision_Controller(Controller):
         
         """
         if frame is None:
-            frame = self.gui.getCurrentFrame()
+            frame = self.gui.get_current_frame()
         window_0_index, window_1_index = self.class_window_index(frame)
         if window_0_index is None:
             window_0_index = -1
@@ -327,26 +334,6 @@ Next time you activate revision mode your unsaved progress will be lost"
         
         if g.data.windows_1 is not None and g.data.windows_1.__len__() > 0:
             return g.data.windows_1[self.current_window][0]+1
-        return self.gui.getCurrentFrame()
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-
-
-    
+        return self.gui.get_current_frame()
     
     

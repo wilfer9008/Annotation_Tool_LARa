@@ -62,11 +62,11 @@ class Label_Correction_Controller(Controller):
         self.move_end_button.clicked.connect(lambda _:self.move_end())
         
         self.set_to_frame_split_button  = self.gui.get_widget(QtWidgets.QPushButton,"lc_set_frame_split_button")
-        self.set_to_frame_split_button.clicked.connect(lambda _:self.split_at_lineEdit.setText(str(self.gui.getCurrentFrame()+1)))
+        self.set_to_frame_split_button.clicked.connect(lambda _:self.split_at_lineEdit.setText(str(self.gui.get_current_frame()+1)))
         self.set_to_frame_start_button  = self.gui.get_widget(QtWidgets.QPushButton,"lc_set_frame_start_button")
-        self.set_to_frame_start_button.clicked.connect(lambda _:self.move_start_lineEdit.setText(str(self.gui.getCurrentFrame()+1)))
+        self.set_to_frame_start_button.clicked.connect(lambda _:self.move_start_lineEdit.setText(str(self.gui.get_current_frame()+1)))
         self.set_to_frame_end_button    = self.gui.get_widget(QtWidgets.QPushButton,"lc_set_frame_end_button")
-        self.set_to_frame_end_button.clicked.connect(lambda _:self.move_end_lineEdit.setText(str(self.gui.getCurrentFrame()+1)))
+        self.set_to_frame_end_button.clicked.connect(lambda _:self.move_end_lineEdit.setText(str(self.gui.get_current_frame()+1)))
         self.set_to_start_button        = self.gui.get_widget(QtWidgets.QPushButton,"lc_set_start_button")
         self.set_to_start_button.clicked.connect(lambda _:self.move_start_lineEdit.setText(str(g.data.windows[self.current_window][0]+1)))
         self.set_to_end_button          = self.gui.get_widget(QtWidgets.QPushButton,"lc_set_end_button")
@@ -129,7 +129,7 @@ class Label_Correction_Controller(Controller):
         #print("reloading LCC")
         self.class_graph.reload_classes(g.data.windows)
         
-        self.update_frame_lines(self.gui.getCurrentFrame())
+        self.update_frame_lines(self.gui.get_current_frame())
         
         if g.data is not None and g.data.windows.__len__() >0:
             self.set_enabled(True)
@@ -230,6 +230,7 @@ class Label_Correction_Controller(Controller):
             button.setChecked(checked)
         
         if self.revision_mode_enabled:
+            #print(window_index,g.data.windows_1.__len__())
             top_buttons = [g.data.windows_1[window_index][2],
                            g.data.windows_2[window_index][2],
                            g.data.windows_3[window_index][2]]
@@ -267,7 +268,7 @@ class Label_Correction_Controller(Controller):
         
         """
         if frame is None:
-            frame = self.gui.getCurrentFrame()
+            frame = self.gui.get_current_frame()
         window_index = self.class_window_index(frame)
         if window_index is None:
             window_index = -1

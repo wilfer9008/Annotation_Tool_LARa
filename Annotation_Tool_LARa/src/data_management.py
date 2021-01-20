@@ -12,6 +12,9 @@ import torch
 
 import global_variables as g
 from scipy.spatial import distance_matrix
+from sklearn.metrics.pairwise import cosine_similarity
+import pyqtgraph as pg
+from PyQt5 import QtWidgets, uic
 
 
 NORM_MAX_THRESHOLDS = [392.85,    345.05,    311.295,    460.544,   465.25,    474.5,     392.85,
@@ -715,8 +718,6 @@ class Sliding_window_dataset(Dataset):
         self.data = self.normalize(self.data)
         self.data = torch.from_numpy(self.data[np.newaxis,np.newaxis,:,:]).float()
 
-        
-        
         self.window_length = window_length
         self.window_step = window_step
     
@@ -834,7 +835,8 @@ class Labeled_sliding_window_dataset(Sliding_window_dataset):
         if label_kind == 'attributes':
             if average:
                 self.average_attributes()
-                self.binarize_attributes()
+                #self.binarize_attributes() # moved to make_windows method 
+                                            # so that it happens after class prediction
             else:
                 self.binarize_attributes()
                 self.label_mode(label_kind)
@@ -865,7 +867,7 @@ class Labeled_sliding_window_dataset(Sliding_window_dataset):
         self.attributes = result
         
                 
-    def label_mode(self,label_kind):
+    def label_mode(self,label_kind): #Mode of labels
         if label_kind == 'class':
             labels = self.classes #n * samples * c
             results = 3
@@ -915,28 +917,27 @@ class Labeled_sliding_window_dataset(Sliding_window_dataset):
         return sorted_vector
     
     def predict_classes_from_attributes(self, att_rep):
-        #print("attributes shape: ", self.attributes.shape)
-        #print("att_rep shape: ", att_rep[:, 1:].shape)
-        
-        #print("att_rep norm shape",np.linalg.norm(attributes,axis=1).shape)
         attributes = np.array(att_rep[:, 1:])
-        attributes = attributes/np.linalg.norm(attributes,axis=1,keepdims=True)
-        
-        distances = distance_matrix(self.attributes,attributes)
-        #print("distances shape",distances.shape)
+        #attributes = attributes/np.linalg.norm(attributes,axis=1,keepdims=True)
+        #distances = distance_matrix(self.attributes,attributes)
+        distances = 1-cosine_similarity(self.attributes,attributes)
         
         sorted_distances = np.argsort(distances, 1)
-        #print("sorted distances shape",sorted_distances.shape)
-        
+        #print("distances shape ", distances.shape)
+        #print("sorted distances shape", sorted_distances.shape)
+        #self.top3_distances = distances[sorted_distances[:,:3]]
+        self.top3_distances = np.zeros((g.data.number_samples,3))
         self.classes = np.zeros((g.data.number_samples,3),dtype=np.int)
+        
         for i in range(g.data.number_samples):
-            sorted_classes = att_rep[sorted_distances[i]][:,0]
+            self.top3_distances[i] = distances[i, sorted_distances[i,:3]]
+            sorted_classes = att_rep[sorted_distances[i],0]
+            #First occurance (index) of each class. np.unique is sorted by class not by index.
             indexes = np.unique(sorted_classes, return_index=True)[1]
+            #The classes were already sorted by distance. 
+            #Sorting the indexes again will restore that order
             sorted_classes = [sorted_classes[index] for index in sorted(indexes)]
             self.classes[i] = sorted_classes[:3]
-            
-        
-        
         
         
     def generate_blank_attributes(self):
@@ -945,10 +946,15 @@ class Labeled_sliding_window_dataset(Sliding_window_dataset):
         self.attributes[:,-1] = 1
         
 
-    def make_windows(self,label_kind,average,metric):
-        #np.savetxt("metric", metric)
+    def make_windows(self, label_kind, average, metric, deep_rep=None):
         self.evaluate_labels(label_kind, average, metric)
+        if average:
+            self.binarize_attributes()
         
+        
+        if deep_rep is not None:
+            self.choose_3_from_6(deep_rep, False)#TODO: make this toggleable
+            
         windows_top3 = [[],[],[]]
         
         window_start = 0
@@ -992,7 +998,7 @@ class Labeled_sliding_window_dataset(Sliding_window_dataset):
             and sum(xnor_attributes) == g.data.attributes.__len__()
 
     def check_existing_attrib_vector(self,windows_top3, metric):
-        """Checks whether the Attribute vector is Valid by looking if its in the metrics array"""
+        """Checks whether the Attribute vector is valid by looking if its in the metrics array"""
         
         metric_attributes = metric[:,1:]
         #np.savetxt("metric", metric_attributes)
@@ -1007,28 +1013,174 @@ class Labeled_sliding_window_dataset(Sliding_window_dataset):
                     window = list(windows_top3[j][i])
                     window[3] = list(attributes)
                     windows_top3[j][i] = tuple(window)
+    
+    def choose_3_from_6(self,deep_rep,use_threshold = False):
+        for i in range(g.data.number_samples):
+            #distances index 0-2 are self.top3distances, 3-5 are deep_rep.top3distances
+            distances = np.array([self.top3_distances[i], deep_rep.top3_distances[i]]).reshape(-1)
+            #print("distances ", distances)
+            
+            sorted_distances = np.argsort(distances)
+            if sorted_distances[0] >= 3 \
+                    or (use_threshold and (distances[3] <= g.settings['deep_threshold'])):
+                self.attributes[i] = deep_rep.top1_attributes[i]
+            for j in range(3):
+                if use_threshold and (distances[3+j] <= g.settings['deep_threshold']):
+                    self.classes[i,j] = deep_rep.classes[i,j]
+                    
+                elif sorted_distances[j] < 3:
+                    continue
+                else:
+                    self.classes[i,j-3] = deep_rep.classes[i,j-3]
+                    #print(f"took top{j+1} from deep_rep in frame {i}")
+
+    
+        
                 
+class Deep_representation_dataset(Sliding_window_dataset):
+    def __init__(self,data,window_length,window_step, file_name,windows, network):
+        """Initializes the dataset
+        
+        Arguments:
+        ----------
+        data : numpy array
+            The data that needs to be segmented
+        window_length : int
+            The length of each segment
+        window_step : int
+            The stride/step between segments
+        windows: list
+            The groundtrouth for the data
+        network: torch.nn.model
+            Neural network that gives the deep representation for the data.
+        """
+        super(Deep_representation_dataset, self).__init__(data,window_length,window_step)
+        
+        self.file_names = [file_name]
+        self.deep_labels = self.windows_to_segment_labels(windows)
+        self.deep_fc2 = self.data_to_deep_rep(network)
+        
+        size = network.fc4.out_features #TODO: think about fully convolutional fc4
+        self.fc2 = np.zeros((g.data.number_samples,size))
+        
+        #self.__getitem__= lambda i: self.data[i]
+        #self.__len__ = lambda : self.data.shape[0]
+        #self.__range__ = lambda i: (i,i+1) 
+        del self.data
+        self.__len__ = lambda: int((g.data.number_samples-self.window_length)/self.window_step) +1
+        self.__getitem__= lambda _: None
+    
+    def data_to_deep_rep(self,network):
+        size = network.fc4.out_features #TODO: think about fully convolutional fc4
+        deep_rep = np.zeros((self.__len__(),size))
+        
+        #network.online = True
+        for i in range(self.__len__()):
+            _, deep_rep[i] = network(self.__getitem__(i))
+            
+        #network.online = False
+        return deep_rep
+    
+    def windows_to_segment_labels(self,windows):
+        last_window = 0
+        labels = np.zeros((self.__len__(),1+g.data.attributes.__len__()))
+        for i in range(self.__len__()):
+            lower,upper = self.__range__(i)
+            best_window_index = last_window
+            best_iou = self.intersection_over_union(lower, upper, 
+                                                    windows[last_window][0], 
+                                                    windows[last_window][1])
+            
+            for j in range(last_window+1,windows.__len__()):
+                start,end,_,_ = windows[j]    
+                iou = self.intersection_over_union(lower, upper, start, end)
                 
+                if iou == 0 and start<lower:
+                    #if the intervals don't intersect and 
+                    #window interval is earlier than range interval
+                    #then check next window
+                    continue
+                elif iou == 0:
+                    last_window = j-1   #even if current window isn't in range anymore, 
+                                        #previous window could be in next range
+                    break
+                if iou > best_iou:
+                    best_window_index = j
+                    best_iou = iou
+            
+            _,_,class_,attributes = windows[best_window_index]
+            label = np.array([class_]+(attributes))
+            #print(label)
+            labels[i] = label
+        
+        #print(labels)
+        return labels
+                          
+    def intersection_over_union(self,a1,b1,a2,b2):
+        """Calculates the IoU between 2 intervals [a1,b1] and [a2,b2]"""
+        intersection = min(b1,b2) - max(a1,a2)
+        if intersection < 0:
+            return 0 #if less then zero the 2 intervalls don't intersect. intersection is empty
+        union = max(b1,b2) - min(a1,a2)
+        
+        return intersection / union
+        
+    def add_deep_rep_data(self, file_name, data, windows, network):
+        if file_name not in self.file_names:
+            deep_rep = Deep_representation_dataset(data, self.window_length,
+                                                   self.window_step, file_name, windows, network)
+            #add to files list
+            self.file_names.append(file_name)
+            
+            #stack data onto self.data
+            self.data = np.vstack((self.deep_fc2,deep_rep.deep_fc2))
+            
+            #stack labels onto self.deep_labels
+            self.deep_labels = np.vstack((self.deep_labels,deep_rep.deep_labels))
+        
+    
+    def save_fc2(self, index, fc2):
+        lower,upper = self.__range__(index)
+        self.fc2[lower:upper,:] += fc2.detach().numpy()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    def predict_labels_from_fc2(self):
+        distances = 1-cosine_similarity(self.fc2,self.deep_fc2)
+        
+        sorted_distances = np.argsort(distances, 1)
+        #print("distances shape ", distances.shape)
+        #print("sorted distances shape", sorted_distances.shape)
+        #self.top3_distances = distances[sorted_distances[:, :3]]
+        self.top3_distances = np.zeros((g.data.number_samples,3))
+        
+        self.classes = np.zeros((g.data.number_samples, 3), dtype=np.int)
+        self.top1_attributes = np.zeros((g.data.number_samples, 
+                                         g.data.attributes.__len__()), 
+                                        dtype=np.int)-1
+        for i in range(g.data.number_samples):
+            self.top3_distances[i] = distances[i, sorted_distances[i,:3]]
+            
+            self.top1_attributes[i] = self.deep_labels[sorted_distances[i,0],1:]
+            sorted_classes = self.deep_labels[sorted_distances[i], 0]
+            #First occurance (index) of each class. np.unique is sorted by class not by index.
+            indexes = np.unique(sorted_classes, return_index=True)[1]
+            #The classes were already sorted by distance. 
+            #Sorting the indexes again will restore that order
+            sorted_classes = [sorted_classes[index] for index in sorted(indexes)]
+            self.classes[i] = sorted_classes[:3]
+        #TODO: test if this is neccessary
+        """
+        #filter -1 entrys from top1_attributes
+        for i in range(g.data.number_samples-1,-1,-1):
+            attributes = self.top1_attributes[i]
+            if list(attributes[attributes>-1]) == []:
+                self.top1_attributes[i] = 0
+                self.top1_attributes[i,-1] = 1
+                self.top3_distances[i] = 10000
+            else:
+                break 
+                #assuming window_stride <= window_size
+                #once normal labels are found all remaining labels are valid
+        """     
 
 
 

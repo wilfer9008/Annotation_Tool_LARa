@@ -46,7 +46,7 @@ class Controller():
         
     def class_window_index(self,frame):
         if frame is None:
-            frame = self.gui.getCurrentFrame()
+            frame = self.gui.get_current_frame()
         for i, window in enumerate(g.data.windows):
             if window[0] <= frame and frame < window[1]:
                 return i

@@ -8,18 +8,21 @@ from PyQt5 import QtWidgets
 
 
 from .controller import Controller
-from dialogs import Progress_Dialog
+from dialogs import Progress_Dialog, Plot_Dialog
 from PyQt5.QtCore import QThread, pyqtSignal
 import torch
 import os
+import numpy as np
 from network import Network
-from data_management import Labeled_sliding_window_dataset
+from data_management import Labeled_sliding_window_dataset,\
+    Deep_representation_dataset
 import time
 
 
 import global_variables as g
 import pyqtgraph as pg
 from controllers.controller import Graph
+import dill
 
 
 class Automatic_Annotation_Controller(Controller):
@@ -30,7 +33,7 @@ class Automatic_Annotation_Controller(Controller):
         
         self.selected_network = 0 #TODO: Save last selected in settings
         self.current_window = -1
-        
+        self.deep_rep_files = []
         self.setup_widgets()
         
     def setup_widgets(self):
@@ -67,6 +70,17 @@ class Automatic_Annotation_Controller(Controller):
         self.statusWindow = self.gui.get_widget(QtWidgets.QTextEdit, 'aa_statusWindow')
         self.add_status_message("This mode is for using a Neural Network to annotate Data.")
         
+        #deep rep functions
+        self.deep_rep_checkBox = self.gui.get_widget(QtWidgets.QCheckBox,"aa_deep_rep_checkBox")
+
+        self.deep_rep_button = self.gui.get_widget(QtWidgets.QPushButton,"aa_deep_rep_browse_button")
+        self.deep_rep_button.clicked.connect(lambda _:self.browse_deep_rep_files())
+        
+        self.average_attributes_checkBox.stateChanged.connect(lambda x: 
+            self.deep_rep_checkBox.setChecked(False) if not x else 0)
+        self.deep_rep_checkBox.stateChanged.connect(lambda x:
+            self.average_attributes_checkBox.setChecked(True) if x else 0)
+        
     def enable_widgets(self):
         if not self.enabled:
             self.class_graph_1 = Graph(self.class_graph_1, 'class', 
@@ -77,7 +91,8 @@ class Automatic_Annotation_Controller(Controller):
                                      interval_lines=False, label='Classes #3')
             self.attribute_graph = Graph(self.attribute_graph, 'attribute',interval_lines = False)
             
-            
+            #self.deep_rep_button.setEnabled(True)
+            self.network_comboBox.setEnabled(True)
             
             self.enabled = True
         
@@ -89,7 +104,11 @@ class Automatic_Annotation_Controller(Controller):
         self.reload()
         self.enable_annotate_button()
         self.enable_load_button()
-
+        
+        self.deep_rep_checkBox.setEnabled(False)
+        self.deep_rep_checkBox.setChecked(False)
+        self.deep_rep_files = []
+        
     def enable_annotate_button(self):
         if self.selected_network>0\
                 and self.enabled\
@@ -122,27 +141,40 @@ class Automatic_Annotation_Controller(Controller):
             self.load_predictions_button.setEnabled(False)
     
     def reload(self):
+        frame = self.gui.get_current_frame()
+        graphs = [self.class_graph_1, self.class_graph_2, self.class_graph_3]
+        for graph in graphs:
+                graph.update_frame_lines(play=frame)
+        
         if g.data is not None \
                 and g.data.windows_1 is not None \
                 and g.data.windows_1.__len__() >0:
             
-            graphs = [self.class_graph_1, self.class_graph_2, self.class_graph_3]
             windows = [g.data.windows_1, g.data.windows_2, g.data.windows_3]
             for graph,window in zip(graphs,windows):
                 graph.reload_classes(window)
             
-            
-            self.select_window_by_frame()
+            self.select_window_by_frame(frame)
             self.selectWindow(self.current_window)
             self.highlight_class_bar(self.current_window)
                 
     def select_network(self,index):
         """Saves the selected network and tries to activate annotation if one was selected"""
         self.selected_network = index
-        if index == 2:
-            self.average_attributes_checkBox.setEnabled(True)
+        if index > 0:
+            attributes = g.networks[index]['attributes']
         else:
-            self.average_attributes_checkBox.setEnabled(False)
+            attributes = False
+        self.average_attributes_checkBox.setEnabled(attributes)
+        self.deep_rep_button.setEnabled(attributes)
+        if not attributes:
+            self.deep_rep_checkBox.setChecked(False)
+            self.deep_rep_checkBox.setEnabled(False)
+            self.average_attributes_checkBox.setChecked(False)
+        elif self.deep_rep_files != []:
+            self.deep_rep_checkBox.setEnabled(True)
+            
+            
         self.enable_annotate_button()
         self.enable_load_button()
     
@@ -151,8 +183,9 @@ class Automatic_Annotation_Controller(Controller):
         
         self.progress = Progress_Dialog(self.gui, "annotating", 7)
         
-        self.annotator = Annotator(self.gui,self.selected_network)
+        self.annotator = Annotator(self.gui,self.selected_network,self.deep_rep_checkBox.isChecked(),self.deep_rep_files)
         self.annotator.progress.connect(self.progress.setStep)
+        self.annotator.progress_add.connect(self.progress.advanceStep)
         self.annotator.nextstep.connect(self.progress.newStep)
         self.annotator.cancel.connect(lambda _: self.cancel_annotation())
         self.annotator.done.connect(lambda _: self.finish_annotation())
@@ -173,6 +206,8 @@ class Automatic_Annotation_Controller(Controller):
         #print("windows_3: ", g.data.windows_3)
         self.time_annotation()
         
+        del self.annotator
+        
     def cancel_annotation(self):
         self.progress.close()
         self.time_annotation()
@@ -185,8 +220,7 @@ class Automatic_Annotation_Controller(Controller):
         hours = time_elapsed//3600
         #print(time_elapsed)
         self.add_status_message("The annotation took {}:{}:{}".format(hours,minutes,seconds))
-        
-        
+    
     def load_predictions(self):
         g.data.loadPredictions(g.settings['saveFinishedPath'],
                                g.networks[self.selected_network]['annotator_id'])
@@ -217,7 +251,7 @@ class Automatic_Annotation_Controller(Controller):
             
     def class_window_index(self,frame):
         if frame is None:
-            frame = self.gui.getCurrentFrame()
+            frame = self.gui.get_current_frame()
         for i, window in enumerate(g.data.windows_1):
             if window[0] <= frame and frame < window[1]:
                 return i
@@ -228,7 +262,7 @@ class Automatic_Annotation_Controller(Controller):
         
         """
         if frame is None:
-            frame = self.gui.getCurrentFrame()
+            frame = self.gui.get_current_frame()
         window_index = self.class_window_index(frame)
         if window_index is None:
             window_index = -1
@@ -292,17 +326,52 @@ class Automatic_Annotation_Controller(Controller):
         """returns the start of the current window"""
         if g.data.windows_1 is not None and g.data.windows_1.__len__() >0:
             return g.data.windows_1[self.current_window][0]+1
-        return self.gui.getCurrentFrame()
+        return self.gui.get_current_frame()
+    
+    def browse_deep_rep_files(self):
+        current_file_name = g.data.file_name
+        name_parts = current_file_name.split('_')
+        subject_id = [s for s in name_parts if 'S' in s][0]
+        #print(subject_id)
+        paths = QtWidgets.QFileDialog.getOpenFileNames(
+                    parent = self.gui, 
+                    caption = 'Please choose annotated files from the same Subject as the current file.',
+                    directory = g.settings['saveFinishedPath'], 
+                    filter = f'CSV Files (*{subject_id}*norm_data.csv)', 
+                    initialFilter = '')[0]
+        #print(paths)
+        
+        self.deep_rep_files = paths
+        
+        if paths != []:
+            file_names = [os.path.split(path)[1][:-14] for path in paths]
+            #print(file_names)
+            msg = "Selected files for Deep Representation learning:"
+            for file in file_names:
+                msg += f"\n- {file}"
+            self.add_status_message(msg)
+            
+            self.deep_rep_checkBox.setEnabled(True)
+            self.deep_rep_checkBox.setChecked(True)
+        else:
+            self.add_status_message("No files selected for Deep Representation learning")
+            self.deep_rep_checkBox.setEnabled(False)
+            self.deep_rep_checkBox.setChecked(False)
     
 class Annotator(QThread):
     progress = pyqtSignal(int)
+    progress_add = pyqtSignal(int)
     nextstep = pyqtSignal(str,int)
     done = pyqtSignal(int)
     cancel = pyqtSignal(int)
     
-    def __init__(self,gui,selected_network):
+    def __init__(self, gui, selected_network, deep_rep=False, paths=[]):
         super(Annotator, self).__init__()
         self.gui = gui
+        
+        self.deep_rep = deep_rep
+        self.paths = paths
+        
         self.selected_network = selected_network
         self.window_step = g.settings['segmentationWindowStride']
         self.device = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
@@ -331,39 +400,40 @@ class Annotator(QThread):
             raise e
             
         
-    
     def run(self):
         self.nextstep.emit("loading network", 1)
         
         #Load network
-        #print("loading network")
         network,config,att_rep = self.load_network(self.selected_network)
-        #print("network loaded")
+        network.deep_rep = self.deep_rep
         
-        self.nextstep.emit("segmenting", 1)
+        self.nextstep.emit("segmenting", 1+self.paths.__len__())
         
         #Segment Data
-        #print("segmenting data")
         window_length = config['sliding_window_length']
         dataset = Labeled_sliding_window_dataset(g.data.mocap_data, window_length, self.window_step)
         dataset_len = dataset.__len__()
-        #print("data segmented")
-        
-        
+        self.progress_add.emit(1)
+
+        #Making deep representation
+        if self.deep_rep:
+            network.deep_rep = True
+            deep_rep = self.get_deep_representations(self.paths, config, network)
+            
+        else:
+            deep_rep = None
         #Forward through network
         self.nextstep.emit("annotating", dataset_len)
-        
         label_kind = config['labeltype']
-        
         for i in range(dataset_len):
-            label = network(dataset.__getitem__(i))
-            #print(label)
-            
-            #label = torch.argmax(label).item()
-            #dataset.setlabel(i, label, label_kind)
+            if self.deep_rep:
+                label,fc2 = network(dataset.__getitem__(i))
+                deep_rep.save_fc2(i, fc2)
+            else:
+                label = network(dataset.__getitem__(i))
+
             if label_kind == 'class':
                 label = torch.argsort(label, descending=True)[0]
-                #print(label)
                 dataset.save_labels(i, label, label_kind)
             elif label_kind == 'attributes':
                 label = label.detach()
@@ -371,26 +441,20 @@ class Annotator(QThread):
             else:
                 raise Exception
             
-            #print(str(i+1)+"/"+str(dataset_len)+"\tRange:"+str(self.dataset.__range__(i)))
             self.progress.emit(i)
         
-        #snippet = dataset.attributes[:,100,:]
-        
-        
         #Evaluate results
+        if self.deep_rep:
+            deep_rep.predict_labels_from_fc2()
         self.nextstep.emit("evaluating", 1)
-        
-        #windows = dataset.evaluate()
-        
         average_checkbox = self.gui.get_widget(QtWidgets.QCheckBox,"aa_average_attributes_checkBox")
         if att_rep is not None:
             #metrics = Metrics(config, self.device, att_rep)
-            metrics = att_rep
-            
+            metrics = att_rep    
         else:
             metrics = None
         windows_1,windows_2,windows_3 = dataset.make_windows(
-            label_kind, average_checkbox.isChecked(), metrics)
+            label_kind, average_checkbox.isChecked(), metrics,deep_rep)
 
         
         #Save windows
@@ -401,7 +465,11 @@ class Annotator(QThread):
         g.data.savePredictions(g.settings['saveFinishedPath'],
                                g.networks[self.selected_network]['annotator_id'])
         
-        
+        #Make Histograms
+        if g.settings["make_histogramms"]:
+            self.dataset = dataset
+            self.deep_rep = deep_rep
+            
         
         #Merge windows
         self.nextstep.emit("cleaning up", 1)#TODO: eliminate this step
@@ -409,7 +477,76 @@ class Annotator(QThread):
         self.nextstep.emit("done", 0)
         self.done.emit(0)
 
+    def get_deep_representations(self, paths, config, network):
+        current_file_name = g.data.file_name
+        name_parts = current_file_name.split('_')
+        subject_id = [s for s in name_parts if 'S' in s][0]
+        pickled_deep_rep_path = f"{g.settings['saveFinishedPath']}{os.sep}{subject_id}.p"
+        if os.path.exists(pickled_deep_rep_path):
+            deep_rep = dill.load(open(pickled_deep_rep_path,"rb"))
+            existing_files = deep_rep.file_names
+            new_files = [os.path.split(path)[1] for path in paths]
+            
+            if [file for file in existing_files if file not in new_files] != []:
+                #The deep_rep has files that are not needed. Better make new deep_rep
+                #print("making new deep_rep. unneeded files")
+                deep_rep = None
+            elif [file for file in new_files if file not in existing_files] != []:
+                #There are new files that need to be added to deep_rep. 
+                #It will be updated in the following for-loop
+                #print("updating deep_rep. too few files")
+                pass
+            else:
+                #existing and new files are identical.
+                #print("returning old deep_rep. identical file list")
+                return deep_rep
+        else:
+            deep_rep = None
+        
+        for path in paths:
+            
+            #getting the data
+            data = np.loadtxt(path, delimiter=',', skiprows=1)
+            data = data[:,2:]
+            
+            #Getting windows file path
+            directory, data_name = os.path.split(path)
+            window_name_parts = data_name.split('_')[:5]
+            window_name_parts.append("windows.txt")
+            window_name = window_name_parts[0]
+            for part in window_name_parts[1:]:
+                window_name += "_"+part
+            window_path = directory+os.sep+window_name
+            
+            #reading the windows_file
+            windows = []
+            with open(window_path, 'r+t') as windows_file:
+                lines = windows_file.readlines()
+                for line in lines:
+                    window = eval(line[:-1])
+                    windows.append(window)
+            
+            if deep_rep is None:
+                window_length = config['sliding_window_length']
+                deep_rep = Deep_representation_dataset(data, window_length, 
+                                                       self.window_step, data_name, 
+                                                       windows, network)
+            else:
+                deep_rep.add_deep_rep_data(data_name, data, windows,network)
+            
+            self.progress_add.emit(1)
+        
+        dill.dump(deep_rep,open(pickled_deep_rep_path,"wb"))
+        return deep_rep
 
     
+
+
+
+
+
+
+
+
 
 

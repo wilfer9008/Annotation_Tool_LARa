@@ -115,7 +115,7 @@ class Manual_Annotation_Controller(Controller):
             start = g.data.windows[-1][1] + 1
             self.startLineEdit.setText(str(start))
             self.endLineEdit.setText(str(start))
-            self.update_frame_lines(start, start, self.gui.getCurrentFrame())
+            self.update_frame_lines(start, start, self.gui.get_current_frame())
             
             
         
@@ -176,7 +176,7 @@ class Manual_Annotation_Controller(Controller):
                                                                             #not much thought has gone into the parameter values of start and end
                     """
                     self.class_graph.add_class(start, end, class_index, attributes)
-                    self.update_frame_lines(end, end, self.gui.getCurrentFrame())
+                    self.update_frame_lines(end, end, self.gui.get_current_frame())
                     
         else:
             self.add_status_message("Please make sure that the Labelwindow is bigger than 50 Frames. A size of at least ~100 Frames is recommended")
@@ -216,7 +216,7 @@ class Manual_Annotation_Controller(Controller):
         
         if verified:
             self.add_status_message("Labels are verified! You can now save your labels. Please choose the folder for labeled sequences, when saving.")
-            self.gui.activateSaveButton()
+            self.gui.activate_save_button()
         else:
             if 1 in failed_test:
                 self.add_status_message("Error: There is a gap between windows.\nPlease contact someone for help.")
@@ -230,8 +230,9 @@ class Manual_Annotation_Controller(Controller):
                 self.add_status_message("Please Finish annotating before verifying")
     
     def updateEndLineEdit(self,end=None):
+        current_frame = self.gui.get_current_frame() + 1
         if end is None:
-            current_frame = self.gui.getCurrentFrame()+1
+            current_frame = self.gui.get_current_frame()+1
             self.endLineEdit.setText(str(current_frame))
             #self.gui.updateFrameLines(current_frame)
             self.update_frame_lines(end=current_frame)
@@ -249,33 +250,3 @@ class Manual_Annotation_Controller(Controller):
         #Controller.revision_mode(self, enable)
         self.revision_mode_enabled = enable
         self.saveLabelsButton.setEnabled(not enable)
-        
-        
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
