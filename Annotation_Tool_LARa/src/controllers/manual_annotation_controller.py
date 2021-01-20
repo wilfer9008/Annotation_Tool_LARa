@@ -230,6 +230,7 @@ class Manual_Annotation_Controller(Controller):
                 self.add_status_message("Please Finish annotating before verifying")
     
     def updateEndLineEdit(self,end=None):
+        current_frame = self.gui.get_current_frame() + 1
         if end is None:
             current_frame = self.gui.get_current_frame()+1
             self.endLineEdit.setText(str(current_frame))

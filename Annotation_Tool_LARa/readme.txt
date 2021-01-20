@@ -10,4 +10,5 @@ The tool needs:
 Start the program by running 
 python main.py
 in the src folder 
+
 or by running start.bat
