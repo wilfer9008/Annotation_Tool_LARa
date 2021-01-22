@@ -465,12 +465,6 @@ class Annotator(QThread):
         g.data.savePredictions(g.settings['saveFinishedPath'],
                                g.networks[self.selected_network]['annotator_id'])
         
-        #Make Histograms
-        if g.settings["make_histogramms"]:
-            self.dataset = dataset
-            self.deep_rep = deep_rep
-            
-        
         #Merge windows
         self.nextstep.emit("cleaning up", 1)#TODO: eliminate this step
         

@@ -6,6 +6,7 @@ The tool needs:
 -pygtgraph
 -pytorch
 -PyOpenGL
+-dill
 
 Start the program by running 
 python main.py
