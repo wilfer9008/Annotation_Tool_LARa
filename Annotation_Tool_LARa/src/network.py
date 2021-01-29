@@ -1,8 +1,8 @@
-'''
+"""
 Created on May 17, 2019
 
 @author: fmoya
-'''
+"""
 
 from __future__ import print_function
 import logging
@@ -10,29 +10,29 @@ import logging
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F 
+import torch.nn.functional as F
 import torch.optim as optim
 
 import numpy as np
 
 
 class Network(nn.Module):
-    '''
+    """
     classdocs
-    '''
+    """
 
 
     def __init__(self, config):
-        '''
+        """
         Constructor
-        '''
-        
+        """
+
         super(Network, self).__init__()
-        
+
         self.deep_rep = False
-        
+
         logging.info('            Network: Constructor')
-        
+
         self.config = config
 
         if self.config["reshape_input"]:
@@ -308,12 +308,12 @@ class Network(nn.Module):
         self.avgpool = nn.AvgPool2d(kernel_size=[1, self.config['NB_sensor_channels']])
 
         self.softmax = nn.Softmax()
-        
+
         self.sigmoid = nn.Sigmoid()
 
         return
-    
-    
+
+
 
     def forward(self, x):
 
@@ -458,15 +458,15 @@ class Network(nn.Module):
             x_RL = F.relu(self.fc3_RL(x_RL))
 
             x = torch.cat((x_LA, x_LL, x_N, x_RA, x_RL), 1)
-        
+
         if self.config["fully_convolutional"] == "FCN":
             x = F.dropout(x, training=self.training)
             x = F.relu(self.fc4(x))
             x = F.dropout(x, training=self.training)
-            
+
             if self.deep_rep:
                 deep_fc2 = x.clone().detach()
-            
+
             x = self.fc5(x)
             x = self.avgpool(x)
             x = x.view(x.size()[0], x.size()[1], x.size()[2])
@@ -475,10 +475,10 @@ class Network(nn.Module):
             x = F.dropout(x, training=self.training)
             x = F.relu(self.fc4(x))
             x = F.dropout(x, training=self.training)
-            
+
             if self.deep_rep:
                 deep_fc2 = x.clone().detach()
-            
+
             x = self.fc5(x)
 
         if self.config['output'] == 'attribute':
@@ -487,22 +487,22 @@ class Network(nn.Module):
         if not self.training:
             if self.config['output'] == 'softmax':
                 x = self.softmax(x)
-        
+
         if self.deep_rep:
             return x, deep_fc2
         else:
             return x
         #return x11.clone(), x12.clone(), x21.clone(), x22.clone(), x
-    
-    
-    
+
+
+
     def init_weights(self):
         self.apply(Network._init_weights_orthonormal)
-        
+
         return
-    
-    
-    
+
+
+
     @staticmethod
     def _init_weights_orthonormal(m):
         if isinstance(m, nn.Conv2d):
@@ -510,14 +510,14 @@ class Network(nn.Module):
             #m.weight.data.normal_(0, (2. / n) ** (1 / 2.0))
             nn.init.orthogonal_(m.weight, gain = np.sqrt(2))
             nn.init.constant_(m.bias.data, 0)
-        if isinstance(m, nn.Linear):          
+        if isinstance(m, nn.Linear):
             nn.init.orthogonal_(m.weight, gain = np.sqrt(2))
             nn.init.constant_(m.bias.data, 0)
-        
+
         return
 
-    
-    
+
+
     def size_feature_map(self, Wx, Hx, F, P, S, type_layer = 'conv'):
 
         if self.config["fully_convolutional"] == "FCN":
@@ -530,9 +530,9 @@ class Network(nn.Module):
         if type_layer == 'conv':
             Wy = 1 + (Wx - F[0] + 2 * Pw) / S[0]
             Hy = 1 + (Hx - F[1] + 2 * Ph) / S[1]
-        
+
         elif type_layer == 'pool':
             Wy = 1 + (Wx - F[0]) / S[0]
             Hy = 1 + (Hx - F[1]) / S[1]
-                    
+
         return Wy, Hy

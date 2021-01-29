@@ -2,6 +2,7 @@ The tool needs:
 -python 3.7 or newer
 -numpy
 -scipy
+-scikit-learn
 -PyQt5 (install pyside2 aswell if errors happen)
 -pygtgraph
 -pytorch
