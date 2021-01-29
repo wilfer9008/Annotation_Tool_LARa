@@ -15,11 +15,11 @@ import sys
 from PyQt5.QtWidgets import QApplication
 import torch
 from network import Network
-from data_management import Labeled_sliding_window_dataset, Data_processor,\
-    Deep_representation_dataset
+from data_management import LabeledSlidingWindowDataset, DataProcessor,\
+    DeepRepresentationDataset
 import dill
 import numpy as np
-from dialogs import Plot_Dialog
+from dialogs import PlotDialog
 import pyqtgraph as pg
 
 pg.setConfigOption('background', 'w')
@@ -190,9 +190,9 @@ def get_deep_representations(paths, config, network,window_step):
             
             if deep_rep is None:
                 window_length = config['sliding_window_length']
-                deep_rep = Deep_representation_dataset(data, window_length, 
-                                                       window_step, data_name, 
-                                                       windows, network)
+                deep_rep = DeepRepresentationDataset(data, window_length,
+                                                     window_step, data_name,
+                                                     windows, network)
             else:
                 deep_rep.add_deep_rep_data(data_name, data, windows,network)        
         dill.dump(deep_rep,open(pickled_deep_rep_path,"wb"))
@@ -216,12 +216,12 @@ def method_d(labels_15, labels_16, boost_15, boost_16):
     for i, files, boost in [(15, labels_15, boost_15), (16, labels_16, labels_16)]:        
         for file in files:
             print(f"method D: processing file {file}")
-            g.data = Data_processor(file, False, True)
+            g.data = DataProcessor(file, False, True)
             deep_rep = get_deep_representations(boost, config, network, window_step)
             
-            dataset = Labeled_sliding_window_dataset(g.data.mocap_data, window_length, window_step)
+            dataset = LabeledSlidingWindowDataset(g.data.mocap_data, window_length, window_step)
             dataset_len = dataset.__len__()
-            #dataset2 = Labeled_sliding_window_dataset(g.data.mocap_data, window_length, window_step)
+            #dataset2 = LabeledSlidingWindowDataset(g.data.mocap_data, window_length, window_step)
 
     
             for i in range(dataset_len):
@@ -247,7 +247,7 @@ def method_d(labels_15, labels_16, boost_15, boost_16):
             
             #Saving method d A92
             #dataset2.make_windows(label_kind, True, metrics, deep_rep)
-            #save_windows(dataset2.classes[:,0], deep_rep.top3_distances[:,0], 92)
+            #make_backup(dataset2.classes[:,0], deep_rep.top3_distances[:,0], 92)
             
             
             save_windows(deep_rep.classes[:,0], deep_rep.top3_distances[:,0], 92)
@@ -270,9 +270,9 @@ def method_c(files):
     datasets = []
     for file in files:
         print(f"method C: processing file {file}")
-        g.data = Data_processor(file, False, True)
+        g.data = DataProcessor(file, False, True)
         
-        dataset = Labeled_sliding_window_dataset(g.data.mocap_data, window_length, window_step)
+        dataset = LabeledSlidingWindowDataset(g.data.mocap_data, window_length, window_step)
         dataset_len = dataset.__len__()
     
         for i in range(dataset_len):
@@ -291,7 +291,7 @@ def method_c(files):
         datasets.append(dataset)
         
         #real labels A90
-        #g.data.createBackup(windows_path, f"A{g.networks[1]['annotator_id']}_N00")
+        #g.data.save_windows(windows_path, f"A{g.networks[1]['annotator_id']}_N00")
         windows = [list(np.repeat(class_, end-start)) for (start, end, class_, _) in g.data.windows]
         real_classes = []
         for window in windows:
@@ -303,7 +303,7 @@ def method_c(files):
         #g.data.windows_1 = windows_1
         #g.data.windows_2 = windows_2
         #g.data.windows_3 = windows_3
-        #g.data.savePredictions(windows_path, g.networks[4]['annotator_id'])
+        #g.data.save_predictions(windows_path, g.networks[4]['annotator_id'])
         save_windows(dataset.classes[:,0], dataset.top3_distances[:,0], 93)
         
         
@@ -326,7 +326,7 @@ def make_histogramms_2(real_classes, baseline_classes, test_classes, test_distan
         same_y,same_x = np.histogram(same_distances, bins=divisions, range=(0,0.4))
         worse_y,worse_x = np.histogram(worse_distances, bins=divisions, range=(0,0.4))
         
-        dlg = Plot_Dialog(window)
+        dlg = PlotDialog(window)
         dlg.setWindowTitle("Graph")
         plot = dlg.graph_widget()
         plot.setTitle(f'<font size="6"><b>{title}</b></font>')

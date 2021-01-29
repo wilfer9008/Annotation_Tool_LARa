@@ -38,6 +38,13 @@
        </widget>
       </item>
       <item>
+       <widget class="QRadioButton" name="states_radioButton">
+        <property name="text">
+         <string>Add States</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
