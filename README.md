@@ -9,12 +9,19 @@ Updating in progress.
 ## Prerequisites
 The implementation is done in Python 3.7:
 -numpy
+
 -scipy
+
 -scikit-learn
+
 -PyQt5
+
 -pygtgraph
+
 -pytorch
+
 -PyOpenGL
+
 -dill
 
 ## Dataset
