@@ -7,10 +7,15 @@ Implementation code for "From Human Pose to On Body Devices for Human Activity R
 Updating in progress.
 
 ## Prerequisites
-The implementation is done in Python:
-- torch
-- numpy
-- PyQt5
+The implementation is done in Python 3.7:
+-numpy
+-scipy
+-scikit-learn
+-PyQt5
+-pygtgraph
+-pytorch
+-PyOpenGL
+-dill
 
 ## Dataset
 
