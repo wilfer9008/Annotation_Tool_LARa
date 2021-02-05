@@ -3,6 +3,7 @@ Implementation code for the Annotation Tool that is used for LARa dataset, prese
 
 And
 
+
 # ICPR20:From Human Pose to On Body Devices for Human Activity Recognition
 Implementation code for "From Human Pose to On Body Devices for Human Activity Recognition.
 
