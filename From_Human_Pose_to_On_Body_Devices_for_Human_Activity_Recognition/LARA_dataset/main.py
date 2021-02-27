@@ -125,7 +125,8 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
     # Maxout
     use_maxout = {'cnn': False, 'lstm': False, 'cnn_imu': False}
 
-    # Balacing
+    # Balacing the proportion of classes into the dataset dataset
+    # This will be deprecated
     balancing = {'mocap': False, 'mbientlab': False, 'virtual': False, 'mocap_half': False, 'virtual_quarter': False,
                  'mocap_quarter': False, 'mbientlab_50_p': False, 'mbientlab_10_p': False, 'mbientlab_50_r': False,
                  'mbientlab_10_r': False, 'mbientlab_quarter': False, 'motionminers_real': False,
@@ -137,6 +138,7 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
     else:
         epoch_mult = 1
 
+    # Number of epochs depending of the dataset and network
     epochs = {'mocap': {'cnn': {'softmax': 6, 'attribute': 6},
                         'lstm': {'softmax': 6, 'attribute': 6},
                         'cnn_imu': {'softmax': 6, 'attribute': 6}},
@@ -178,6 +180,7 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
                                    'cnn_imu': {'softmax': 10, 'attribute': 10}}
               }
 
+
     division_epochs = {'mocap': 2, 'mbientlab': 1, 'virtual': 1, 'mocap_half': 1, 'virtual_quarter': 1,
                        'mocap_quarter': 1, 'mbientlab_50_p': 1, 'mbientlab_10_p': 1, 'mbientlab_50_r': 1,
                        'mbientlab_10_r': 1, 'mbientlab_quarter': 1, 'motionminers_real': 1,
@@ -208,6 +211,7 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
                                   'mbientlab_10_p': 100, 'mbientlab_50_r': 100, 'mbientlab_10_r': 25,
                                   'mbientlab_quarter': 100, 'motionminers_real': 100, 'motionminers_flw': 100}}
 
+    # Number of iterations for accumulating the gradients
     accumulation_steps = {'mocap': 4, 'mbientlab': 4, 'virtual': 4, 'mocap_half': 4, 'virtual_quarter': 4,
                           'mocap_quarter': 4, 'mbientlab_50_p': 4, 'mbientlab_10_p': 4, 'mbientlab_50_r': 4,
                           'mbientlab_10_r': 4, 'mbientlab_quarter': 4, 'motionminers_real': 4, 'motionminers_flw': 4}
@@ -235,6 +239,17 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
     # Evolution
     evolution_iter = 10000
 
+    # Results will be stored in different folders according to the dataset and network
+    # This as a sort of organisation for tracking the experiments
+    # dataset/network/output/MLP_type/input_shape/
+    # dataset/network/output/MLP_type/input_shape/experiment
+    # dataset/network/output/MLP_type/input_shape/experiment/plots
+    # dataset/network/output/MLP_type/input_shape/final
+    # dataset/network/output/MLP_type/input_shape/final/plots
+    # dataset/network/output/MLP_type/input_shape/fine_tuning
+    # dataset/network/output/MLP_type/input_shape/fine_tuning/plots
+
+    # User gotta take care of creating these folders, or storing the results in a different way
     reshape_input = reshape_input
     if reshape_input:
         reshape_folder = "reshape"
