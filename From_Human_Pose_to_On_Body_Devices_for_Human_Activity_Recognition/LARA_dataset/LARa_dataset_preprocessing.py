@@ -397,14 +397,18 @@ def compute_min_num_samples(ids, boolean_classes=True, attr=0):
 
 def compute_statistics_samples(ids, boolean_classes=True, attr=0):
     '''
-    Compute the max and min values for normalizing the data.
-    
-    
-    print max and min.
-    These values will be computed only once and the max min values
-    will be place as constants
+    Compute some statistics of the duration of the sequences data:
+
+    print:
+    Max and Min durations per class or attr
+    Mean and Std durations per class or attr
+    Lower whiskers durations per class or attr
+    1st quartile of durations per class or attr
+    Histogram of proportion per class or attr
     
     @param ids: ids for train
+    @param boolean_classes: selecting between classes or attributes
+    @param attr: ids for attribute
     '''
 
     recordings = ['R{:02d}'.format(r) for r in range(1, 31)]
@@ -506,8 +510,6 @@ def compute_statistics_samples(ids, boolean_classes=True, attr=0):
     axis_list_3.append(fig3.add_subplot(427))
     axis_list_3.append(fig3.add_subplot(428))  
 
-
-
     colours = {0 : 'b', 1 : 'g', 2 : 'r', 3 : 'c', 4 : 'm', 5 : 'y', 6 : 'k', 7 : 'greenyellow'}
     
     mins = []
@@ -548,12 +550,10 @@ def compute_statistics_samples(ids, boolean_classes=True, attr=0):
                             
         axis_list_3[cl].boxplot(counter_list_class[cl])
 
-
         axis_list_2[0].relim()
         axis_list_2[0].autoscale_view()
         axis_list_2[0].legend(loc='best')
-            
-            
+
         fig.canvas.draw()
         fig2.canvas.draw()
         plt.pause(2.0)
@@ -580,23 +580,25 @@ def compute_statistics_samples(ids, boolean_classes=True, attr=0):
     return
 
 
-
-
 ################
 # Generate data
 #################
-def generate_data(ids, sliding_window_length, sliding_window_step, data_dir = None, half = False,
-                  identity_bool = False, usage_modus = 'train'):
+def generate_data(ids, sliding_window_length, sliding_window_step, data_dir=None, half=False,
+                  identity_bool=False, usage_modus='train'):
     '''
     creates files for each of the sequences, which are extracted from a file
     following a sliding window approach
     
-    returns a numpy array
+    returns
+    Sequences are stored in given path
     
     @param ids: ids for train, val or test
     @param sliding_window_length: length of window for segmentation
     @param sliding_window_step: step between windows for segmentation
     @param data_dir: path to dir where files will be stored
+    @param half: using the half of the recording frequency
+    @param identity_bool: selecting for identity experiment
+    @param usage_modus: selecting Train, Val or testing
     '''
 
     if identity_bool:
@@ -611,13 +613,15 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir = No
 
     counter_seq = 0
     hist_classes_all = np.zeros(NUM_CLASSES)
-    
 
     for P in persons:
         if P not in ids:
             print("\nNo Person in expected IDS {}".format(P))
         else:
             if P == 'S11':
+                # Selecting the proportions of the train, val or testing according to the quentity of
+                # recordings per subject, as there are not equal number of recordings per subject
+                # see dataset for checking the recording files per subject
                 if identity_bool:
                     if usage_modus == 'train':
                         recordings = ['R{:02d}'.format(r) for r in range(1, 10)]
@@ -648,6 +652,10 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir = No
                 else:
                     recordings = ['R{:02d}'.format(r) for r in range(1, 31)]
             for R in recordings:
+                # All of these if-cases are coming due to the naming of the recordings in the data.
+                # Not all the subjects have the same
+                # annotated recordings, nor annotators, nor annotations runs, nor scenarios.
+                # these will include all of the recordings for the subjects
                 if P in ["S01", "S02", "S03", "S04", "S05", "S06"]:
                     S = "L01"
                 else:
