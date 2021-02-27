@@ -701,6 +701,7 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir=None
                         data = np.delete(data, class_labels, 0)
                         labels = np.delete(labels, class_labels, 0)
 
+                        # halving the frequency
                         if half:
                             downsampling = range(0, data.shape[0], 2)
                             data = data[downsampling]
@@ -721,7 +722,6 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir=None
                         if np.sum(data_y == labels[:, 0]) == data_y.shape[0]:
 
                             # Sliding window approach
-
                             print("Starting sliding window")
                             X, y, y_all = opp_sliding_window(data_x, labels.astype(int),
                                                              sliding_window_length,
@@ -744,6 +744,7 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir=None
                                     seq = np.reshape(X[f], newshape = (1, X.shape[1], X.shape[2]))
                                     seq = np.require(seq, dtype=np.float)
 
+                                    # Storing the sequences
                                     obj = {"data": seq, "label": y[f], "labels": y_all[f],
                                            "identity": labels_persons[P]}
                                     f = open(os.path.join(data_dir, 'seq_{0:06}.pkl'.format(counter_seq)), 'wb')
@@ -751,7 +752,6 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir=None
                                     f.close()
 
                                     counter_seq += 1
-
                                 except:
                                     raise('\nError adding the seq')
 
@@ -778,6 +778,8 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir=None
 def generate_CSV(csv_dir, data_dir):
     '''
     Generate CSV file with path to all (Training) of the segmented sequences
+    This is done for the DATALoader for Torch, using a CSV file with all the paths from the extracted
+    sequences.
 
     @param csv_dir: Path to the dataset
     @param data_dir: Path of the training data
@@ -794,6 +796,8 @@ def generate_CSV(csv_dir, data_dir):
 def generate_CSV_final(csv_dir, data_dir1, data_dir2):
     '''
     Generate CSV file with path to all (Training and Validation) of the segmented sequences
+    This is done for the DATALoader for Torch, using a CSV file with all the paths from the extracted
+    sequences.
 
     @param csv_dir: Path to the dataset
     @param data_dir1: Path of the training data
@@ -849,12 +853,12 @@ def create_dataset(half=False):
 
     if half:
         "Path to the segmented sequences"
-        base_directory = '/data/fmoya/HAR/datasets/MoCap_dataset_half_freq/'
+        base_directory = '/path_where_sequences_will_ve_stored/MoCap_dataset_half_freq/'
         sliding_window_length = 100
         sliding_window_step = 12
     else:
         "Path to the segmented sequences"
-        base_directory = '/data/fmoya/HAR/datasets/MoCap_dataset/'
+        base_directory = '/path_where_sequences_will_ve_stored/MoCap_dataset/'
         sliding_window_length = 200
         sliding_window_step = 25
 
@@ -863,8 +867,7 @@ def create_dataset(half=False):
     data_dir_test = base_directory + 'sequences_test/'
 
     generate_data(train_ids, sliding_window_length=sliding_window_length,
-                  sliding_window_step=sliding_window_step, data_dir=data_dir_train, half=half,
-                  identity_bool=identity_bool, usage_modus='train')
+                  sliding_window_step=sliding_window_step, data_dir=data_dir_train, half=half, usage_modus='train')
     generate_data(val_ids, sliding_window_length=sliding_window_length,
                   sliding_window_step=sliding_window_step, data_dir=data_dir_val, half=half)
     generate_data(test_ids, sliding_window_length=sliding_window_length,
@@ -880,7 +883,9 @@ def create_dataset(half=False):
 
 
 if __name__ == '__main__':
-
+    # Creating dataset for LARA Mocap 200Hz or LARA Mocap 100Hz
+    # Set the path to where the segmented windows will be located
+    # This path will be needed for the main.py
     create_dataset(half=False)
 
     print("Done")
