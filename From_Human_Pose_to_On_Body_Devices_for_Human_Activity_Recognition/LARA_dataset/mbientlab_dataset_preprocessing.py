@@ -456,10 +456,8 @@ def norm_mbientlab(data):
     Normalizes all sensor channels
     Zero mean and unit variance
 
-    :param data: numpy integer matrix
-        Sensor data
-    :return:
-        Normalized sensor data
+    @param data: numpy integer matrix
+    @return data_norm: Normalized sensor data
     """
 
     mean_values = np.array([-0.6018319,   0.234877,    0.2998928,   1.11102944,  0.17661719, -1.41729978,
