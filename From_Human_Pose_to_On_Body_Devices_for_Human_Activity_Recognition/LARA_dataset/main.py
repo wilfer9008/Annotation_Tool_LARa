@@ -26,32 +26,41 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
     # Options
     dataset = {0: 'mocap', 1: 'mbientlab', 2: 'virtual', 3: 'mocap_half', 4: 'virtual_quarter', 5: 'mocap_quarter',
                6: 'mbientlab_50_p', 7: 'mbientlab_10_p', 8: 'mbientlab_50_r', 9: 'mbientlab_10_r',
-               10: 'mbientlab_quarter', 11: 'motionminers_real'}
+               10: 'mbientlab_quarter', 11: 'motionminers_real', 12: 'motionminers_flw'}
     network = {0: 'cnn', 1: 'lstm', 2: 'cnn_imu'}
-    output = {0: 'softmax', 1: 'attribute'}
+    output = {0: 'softmax', 1: 'attribute', 2: 'identity'}
     usage_modus = {0: 'train', 1: 'test', 2: 'evolution', 3: 'train_final', 4: 'train_random', 5: 'fine_tuning'}
 
     # Dataset Hyperparameters
     NB_sensor_channels = {'mocap': 126, 'mbientlab': 30, 'virtual': 126, 'mocap_half': 126, 'virtual_quarter': 126,
                           'mocap_quarter': 126, 'mbientlab_50_p': 30, 'mbientlab_10_p': 30, 'mbientlab_50_r': 30,
-                          'mbientlab_10_r': 30, 'mbientlab_quarter': 30, 'motionminers_real': 27}
+                          'mbientlab_10_r': 30, 'mbientlab_quarter': 30, 'motionminers_real': 27,
+                          'motionminers_flw': 27}
     sliding_window_length = {'mocap': 200, 'mbientlab': 100, 'virtual': 100, 'mocap_half': 100, 'virtual_quarter': 25,
                              'mocap_quarter': 25, 'mbientlab_50_p': 100, 'mbientlab_10_p': 100, 'mbientlab_50_r': 100,
-                             'mbientlab_10_r': 100, 'mbientlab_quarter': 25, 'motionminers_real': 100}
+                             'mbientlab_10_r': 100, 'mbientlab_quarter': 25, 'motionminers_real': 100,
+                             'motionminers_flw': 100}
     sliding_window_step = {'mocap': 25, 'mbientlab': 12, 'virtual': 12, 'mocap_half': 12, 'virtual_quarter': 12,
                            'mocap_quarter': 12, 'mbientlab_50_p': 12, 'mbientlab_10_p': 12, 'mbientlab_50_r': 12,
-                           'mbientlab_10_r': 12, 'mbientlab_quarter': 12, 'motionminers_real': 12}
+                           'mbientlab_10_r': 12, 'mbientlab_quarter': 12, 'motionminers_real': 12,
+                           'motionminers_flw': 12}
     num_attributes = {'mocap': 19, 'mbientlab': 19, 'virtual': 19, 'mocap_half': 19, 'virtual_quarter': 19,
                       'mocap_quarter': 19, 'mbientlab_50_p': 19, 'mbientlab_10_p': 19, 'mbientlab_50_r': 19,
-                      'mbientlab_10_r': 19, 'mbientlab_quarter': 19, 'motionminers_real': 19}
-    num_tr_inputs = {'mocap': 205016, 'mbientlab': 91384, 'virtual': 239013, 'mocap_half': 213472,
+                      'mbientlab_10_r': 19, 'mbientlab_quarter': 19, 'motionminers_real': 19,
+                      'motionminers_flw': 19}
+    num_tr_inputs = {'mocap': 247702, 'mbientlab': 91399, 'virtual': 239013, 'mocap_half': 213472,
                      'virtual_quarter': 116428, 'mocap_quarter': 168505, 'mbientlab_50_p': 49850,
                      'mbientlab_10_p': 27591, 'mbientlab_50_r': 21791, 'mbientlab_10_r': 8918,
-                     'mbientlab_quarter': 91384, 'motionminers_real': 22057}
+                     'mbientlab_quarter': 91384, 'motionminers_real': 22282, 'motionminers_flw': 93712}
 
-    num_classes = {'mocap': 7, 'mbientlab': 7, 'virtual': 7, 'mocap_half': 7, 'virtual_quarter': 7,
-                   'mocap_quarter': 7, 'mbientlab_50_p': 7, 'mbientlab_10_p': 7, 'mbientlab_50_r': 7,
-                   'mbientlab_10_r': 7, 'mbientlab_quarter': 7, 'motionminers_real': 6}
+    if output[output_idx] == 'identity':
+        num_classes = {'mocap': 14, 'mbientlab': 14, 'virtual': 14, 'mocap_half': 14, 'virtual_quarter': 14,
+                       'mocap_quarter': 14, 'mbientlab_50_p': 14, 'mbientlab_10_p': 14, 'mbientlab_50_r': 14,
+                       'mbientlab_10_r': 14, 'mbientlab_quarter': 14, 'motionminers_real': 3, 'motionminers_flw': 14}
+    else:
+        num_classes = {'mocap': 7, 'mbientlab': 7, 'virtual': 7, 'mocap_half': 7, 'virtual_quarter': 7,
+                       'mocap_quarter': 7, 'mbientlab_50_p': 7, 'mbientlab_10_p': 7, 'mbientlab_50_r': 7,
+                       'mbientlab_10_r': 7, 'mbientlab_quarter': 7, 'motionminers_real': 6, 'motionminers_flw': 7}
 
     # Learning rate
     learning_rates = [0.0001, 0.00001, 0.000001]
@@ -90,6 +99,9 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
                           'cnn_imu': learning_rates[learning_rates_idx]},
           'motionminers_real': {'cnn': learning_rates[learning_rates_idx],
                                 'lstm': learning_rates[learning_rates_idx],
+                                'cnn_imu': learning_rates[learning_rates_idx]},
+          'motionminers_flw': {'cnn': learning_rates[learning_rates_idx],
+                                'lstm': learning_rates[learning_rates_idx],
                                 'cnn_imu': learning_rates[learning_rates_idx]}
           }
     lr_mult = 1.0
@@ -100,7 +112,8 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
     # Balacing
     balancing = {'mocap': False, 'mbientlab': False, 'virtual': False, 'mocap_half': False, 'virtual_quarter': False,
                  'mocap_quarter': False, 'mbientlab_50_p': False, 'mbientlab_10_p': False, 'mbientlab_50_r': False,
-                 'mbientlab_10_r': False, 'mbientlab_quarter': False, 'motionminers_real': False}
+                 'mbientlab_10_r': False, 'mbientlab_quarter': False, 'motionminers_real': False,
+                 'motionminers_flw': False}
 
     # Epochs
     if usage_modus[usage_modus_idx] == 'train_final' or usage_modus[usage_modus_idx] == 'fine_tuning':
@@ -108,81 +121,85 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
     else:
         epoch_mult = 1
 
-    epochs = {'mocap': {'cnn': {'softmax': 32, 'attribute': 50},
-                        'lstm': {'softmax': 10, 'attribute': 5},
-                        'cnn_imu': {'softmax': 32, 'attribute': 50}},
-              'mbientlab': {'cnn': {'softmax': 32, 'attribute': 50},
-                            'lstm': {'softmax': 10, 'attribute': 5},
-                            'cnn_imu': {'softmax': 32, 'attribute': 50}},
-              'virtual': {'cnn': {'softmax': 32, 'attribute': 50},
-                          'lstm': {'softmax': 10, 'attribute': 5},
-                          'cnn_imu': {'softmax': 32, 'attribute': 50}},
-              'mocap_half': {'cnn': {'softmax': 32, 'attribute': 50},
-                             'lstm': {'softmax': 10, 'attribute': 5},
-                             'cnn_imu': {'softmax': 32, 'attribute': 50}},
-              'virtual_quarter': {'cnn': {'softmax': 32, 'attribute': 50},
-                                  'lstm': {'softmax': 10, 'attribute': 5},
-                                  'cnn_imu': {'softmax': 32, 'attribute': 50}},
-              'mocap_quarter': {'cnn': {'softmax': 32, 'attribute': 50},
-                                'lstm': {'softmax': 10, 'attribute': 5},
-                                'cnn_imu': {'softmax': 32, 'attribute': 50}},
-              'mbientlab_50_p': {'cnn': {'softmax': 32, 'attribute': 50},
-                                 'lstm': {'softmax': 10, 'attribute': 5},
-                                 'cnn_imu': {'softmax': 32, 'attribute': 50}},
-              'mbientlab_10_p': {'cnn': {'softmax': 32, 'attribute': 50},
-                                 'lstm': {'softmax': 10, 'attribute': 5},
-                                 'cnn_imu': {'softmax': 32, 'attribute': 50}},
-              'mbientlab_50_r': {'cnn': {'softmax': 32, 'attribute': 50},
-                                 'lstm': {'softmax': 10, 'attribute': 5},
-                                 'cnn_imu': {'softmax': 32, 'attribute': 50}},
-              'mbientlab_10_r': {'cnn': {'softmax': 32, 'attribute': 50},
-                                 'lstm': {'softmax': 10, 'attribute': 5},
-                                 'cnn_imu': {'softmax': 32, 'attribute': 50}},
-              'mbientlab_quarter': {'cnn': {'softmax': 32, 'attribute': 50},
-                                    'lstm': {'softmax': 10, 'attribute': 5},
-                                    'cnn_imu': {'softmax': 32, 'attribute': 50}},
-              'motionminers_real': {'cnn': {'softmax': 15, 'attribute': 15},
-                                    'lstm': {'softmax': 5, 'attribute': 5},
-                                    'cnn_imu': {'softmax': 5, 'attribute': 5}}
+    epochs = {'mocap': {'cnn': {'softmax': 6, 'attribute': 6, 'identity': 5},
+                        'lstm': {'softmax': 6, 'attribute': 6, 'identity': 5},
+                        'cnn_imu': {'softmax': 6, 'attribute': 6, 'identity': 5}},
+              'mbientlab': {'cnn': {'softmax': 10, 'attribute': 10, 'identity': 10},
+                            'lstm': {'softmax': 10, 'attribute': 10, 'identity': 10},
+                            'cnn_imu': {'softmax': 10, 'attribute': 10, 'identity': 10}},
+              'virtual': {'cnn': {'softmax': 32, 'attribute': 50, 'identity': 10},
+                          'lstm': {'softmax': 10, 'attribute': 5, 'identity': 10},
+                          'cnn_imu': {'softmax': 32, 'attribute': 50, 'identity': 10}},
+              'mocap_half': {'cnn': {'softmax': 32, 'attribute': 50, 'identity': 10},
+                             'lstm': {'softmax': 10, 'attribute': 5, 'identity': 10},
+                             'cnn_imu': {'softmax': 32, 'attribute': 50, 'identity': 10}},
+              'virtual_quarter': {'cnn': {'softmax': 32, 'attribute': 50, 'identity': 10},
+                                  'lstm': {'softmax': 10, 'attribute': 5, 'identity': 10},
+                                  'cnn_imu': {'softmax': 32, 'attribute': 50, 'identity': 10}},
+              'mocap_quarter': {'cnn': {'softmax': 32, 'attribute': 50, 'identity': 10},
+                                'lstm': {'softmax': 10, 'attribute': 5, 'identity': 10},
+                                'cnn_imu': {'softmax': 32, 'attribute': 50, 'identity': 10}},
+              'mbientlab_50_p': {'cnn': {'softmax': 32, 'attribute': 50, 'identity': 10},
+                                 'lstm': {'softmax': 10, 'attribute': 5, 'identity': 10},
+                                 'cnn_imu': {'softmax': 32, 'attribute': 50, 'identity': 10}},
+              'mbientlab_10_p': {'cnn': {'softmax': 32, 'attribute': 50, 'identity': 10},
+                                 'lstm': {'softmax': 10, 'attribute': 5, 'identity': 10},
+                                 'cnn_imu': {'softmax': 32, 'attribute': 50, 'identity': 10}},
+              'mbientlab_50_r': {'cnn': {'softmax': 32, 'attribute': 50, 'identity': 10},
+                                 'lstm': {'softmax': 10, 'attribute': 5, 'identity': 10},
+                                 'cnn_imu': {'softmax': 32, 'attribute': 50, 'identity': 10}},
+              'mbientlab_10_r': {'cnn': {'softmax': 32, 'attribute': 50, 'identity': 10},
+                                 'lstm': {'softmax': 10, 'attribute': 5, 'identity': 10},
+                                 'cnn_imu': {'softmax': 32, 'attribute': 50, 'identity': 10}},
+              'mbientlab_quarter': {'cnn': {'softmax': 32, 'attribute': 50, 'identity': 10},
+                                    'lstm': {'softmax': 10, 'attribute': 5, 'identity': 10},
+                                    'cnn_imu': {'softmax': 32, 'attribute': 50, 'identity': 10}},
+              'motionminers_real': {'cnn': {'softmax': 10, 'attribute': 10, 'identity': 10},
+                                    'lstm': {'softmax': 10, 'attribute': 10, 'identity': 10},
+                                    'cnn_imu': {'softmax': 10, 'attribute': 10, 'identity': 10}},
+              'motionminers_flw': {'cnn': {'softmax': 10, 'attribute': 10, 'identity': 10},
+                                   'lstm': {'softmax': 10, 'attribute': 10, 'identity': 10},
+                                   'cnn_imu': {'softmax': 10, 'attribute': 10, 'identity': 10}}
               }
 
     division_epochs = {'mocap': 2, 'mbientlab': 1, 'virtual': 1, 'mocap_half': 1, 'virtual_quarter': 1,
                        'mocap_quarter': 1, 'mbientlab_50_p': 1, 'mbientlab_10_p': 1, 'mbientlab_50_r': 1,
-                       'mbientlab_10_r': 1, 'mbientlab_quarter': 1, 'motionminers_real': 1}
+                       'mbientlab_10_r': 1, 'mbientlab_quarter': 1, 'motionminers_real': 1,
+                       'motionminers_flw': 1}
 
     # Batch size
     batch_size_train = {
         'cnn': {'mocap': 100, 'mbientlab': 100, 'virtual': 100, 'mocap_half': 100, 'virtual_quarter': 100,
                 'mocap_quarter': 100, 'mbientlab_50_p': 100, 'mbientlab_10_p': 100, 'mbientlab_50_r': 100,
-                'mbientlab_10_r': 25, 'mbientlab_quarter': 100, 'motionminers_real': 100},
+                'mbientlab_10_r': 25, 'mbientlab_quarter': 100, 'motionminers_real': 100, 'motionminers_flw': 100},
         'lstm': {'mocap': 100, 'mbientlab': 100, 'virtual': 100, 'mocap_half': 100, 'virtual_quarter': 100,
                  'mocap_quarter': 100, 'mbientlab_50_p': 100, 'mbientlab_10_p': 100, 'mbientlab_50_r': 100,
-                 'mbientlab_10_r': 100, 'mbientlab_quarter': 100, 'motionminers_real': 100},
+                 'mbientlab_10_r': 100, 'mbientlab_quarter': 100, 'motionminers_real': 100, 'motionminers_flw': 100},
         'cnn_imu': {'mocap': 100, 'mbientlab': 100, 'virtual': 100, 'mocap_half': 100, 'virtual_quarter': 100,
                     'mocap_quarter': 100, 'mbientlab_50_p': 100, 'mbientlab_10_p': 100, 'mbientlab_50_r': 100,
-                    'mbientlab_10_r': 25, 'mbientlab_quarter': 100, 'motionminers_real': 100}}
+                    'mbientlab_10_r': 25, 'mbientlab_quarter': 100, 'motionminers_real': 100, 'motionminers_flw': 100}}
 
     batch_size_val = {'cnn': {'mocap': 100, 'mbientlab': 100, 'virtual': 100, 'mocap_half': 100,
                               'virtual_quarter': 100, 'mocap_quarter': 100, 'mbientlab_50_p': 100,
                               'mbientlab_10_p': 100, 'mbientlab_50_r': 100, 'mbientlab_10_r': 25,
-                              'mbientlab_quarter': 100, 'motionminers_real': 100},
+                              'mbientlab_quarter': 100, 'motionminers_real': 100, 'motionminers_flw': 100},
                       'lstm': {'mocap': 100, 'mbientlab': 100, 'virtual': 100, 'mocap_half': 100,
                                'virtual_quarter': 100, 'mocap_quarter': 100, 'mbientlab_50_p': 100,
                                'mbientlab_10_p': 100, 'mbientlab_50_r': 100, 'mbientlab_10_r': 100,
-                               'mbientlab_quarter': 100, 'motionminers_real': 100},
+                               'mbientlab_quarter': 100, 'motionminers_real': 100, 'motionminers_flw': 100},
                       'cnn_imu': {'mocap': 100, 'mbientlab': 100, 'virtual': 100, 'mocap_half': 100,
-                                  'virtual_quarter': 100, 'mocap_quarter': 100,
-                                  'mbientlab_50_p': 100, 'mbientlab_10_p': 100, 'mbientlab_50_r': 100,
-                                  'mbientlab_10_r': 25, 'mbientlab_quarter': 100, 'motionminers_real': 100}}
+                                  'virtual_quarter': 100, 'mocap_quarter': 100, 'mbientlab_50_p': 100,
+                                  'mbientlab_10_p': 100, 'mbientlab_50_r': 100, 'mbientlab_10_r': 25,
+                                  'mbientlab_quarter': 100, 'motionminers_real': 100, 'motionminers_flw': 100}}
 
     accumulation_steps = {'mocap': 4, 'mbientlab': 4, 'virtual': 4, 'mocap_half': 4, 'virtual_quarter': 4,
                           'mocap_quarter': 4, 'mbientlab_50_p': 4, 'mbientlab_10_p': 4, 'mbientlab_50_r': 4,
-                          'mbientlab_10_r': 4, 'mbientlab_quarter': 4, 'motionminers_real': 4}
+                          'mbientlab_10_r': 4, 'mbientlab_quarter': 4, 'motionminers_real': 4, 'motionminers_flw': 4}
 
     # Filters
     filter_size = {'mocap': 5, 'mbientlab': 5, 'virtual': 5, 'mocap_half': 5, 'virtual_quarter': 5, 'mocap_quarter': 5,
                    'mbientlab_50_p': 5, 'mbientlab_10_p': 5, 'mbientlab_50_r': 5, 'mbientlab_10_r': 5,
-                   'mbientlab_quarter': 5, 'motionminers_real': 5}
+                   'mbientlab_quarter': 5, 'motionminers_real': 5, 'motionminers_flw': 5}
     num_filters = {'mocap': {'cnn': 64, 'lstm': 64, 'cnn_imu': 64},
                    'mbientlab': {'cnn': 64, 'lstm': 64, 'cnn_imu': 64},
                    'virtual': {'cnn': 64, 'lstm': 64, 'cnn_imu': 64},
@@ -194,7 +211,8 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
                    'mbientlab_50_r': {'cnn': 64, 'lstm': 64, 'cnn_imu': 64},
                    'mbientlab_10_r': {'cnn': 64, 'lstm': 64, 'cnn_imu': 64},
                    'mbientlab_quarter': {'cnn': 64, 'lstm': 64, 'cnn_imu': 64},
-                   'motionminers_real': {'cnn': 64, 'lstm': 64, 'cnn_imu': 64}}
+                   'motionminers_real': {'cnn': 64, 'lstm': 64, 'cnn_imu': 64},
+                   'motionminers_flw': {'cnn': 64, 'lstm': 64, 'cnn_imu': 64}}
 
     freeze_options = [False, True]
 
@@ -218,6 +236,10 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
     elif output[output_idx] == 'attribute':
         labeltype = "attributes"
         folder_base = "/data2/"
+    elif output[output_idx] == 'identity':
+        labeltype = "identity"
+        folder_base = "/data2/"
+
 
     # Folder
     if usage_modus[usage_modus_idx] == 'train':
@@ -262,10 +284,11 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
                     'mbientlab_50_r': folder_base + 'fmoya/HAR/datasets/mbientlab_50_recordings/',
                     'mbientlab_10_r': folder_base + 'fmoya/HAR/datasets/mbientlab_10_recordings/',
                     'mbientlab_quarter': folder_base + 'fmoya/HAR/datasets/mbientlab/',
-                    'motionminers_real': folder_base + 'fmoya/HAR/datasets/motionminers_real/'}
+                    'motionminers_real': folder_base + 'fmoya/HAR/datasets/motionminers_real/',
+                    'motionminers_flw': folder_base + 'fmoya/HAR/datasets/motionminers_flw/'}
 
     # GPU
-    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "3"
     GPU = 0
 
     # Labels position on the segmented window
@@ -274,13 +297,18 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
     percentages_names = ["001", "002", "005", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10"]
     percentages_dataset = [0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 
-    train_show_value = num_tr_inputs[dataset[dataset_idx]] * percentages_dataset[percentage_idx]
-    if dataset[dataset_idx] == "mbientlab":
-        train_show = {'cnn': int(train_show_value / 300), 'lstm': 100, 'cnn_imu': int(train_show_value / 300)}
-        valid_show = {'cnn': int(train_show_value / 100), 'lstm': 500, 'cnn_imu': int(train_show_value / 100)}
+    #train_show_value = num_tr_inputs[dataset[dataset_idx]] * percentages_dataset[percentage_idx]
+    train_show_value = num_tr_inputs[dataset[dataset_idx]] / \
+                       batch_size_train[network[network_idx]][dataset[dataset_idx]]
+    if dataset[dataset_idx] == "mbientlab" or dataset[dataset_idx] == "motionminers_real":
+        train_show = {'cnn': int(train_show_value / 50), 'lstm': 50, 'cnn_imu': int(train_show_value / 50)}
+        valid_show = {'cnn': int(train_show_value / 10), 'lstm': 10, 'cnn_imu': int(train_show_value / 10)}
+    elif dataset[dataset_idx] == "mocap":
+        train_show = {'cnn': int(train_show_value / 100), 'lstm': 100, 'cnn_imu': int(train_show_value / 100)}
+        valid_show = {'cnn': int(train_show_value / 20), 'lstm': 50, 'cnn_imu': int(train_show_value / 20)}
     else:
-        train_show = {'cnn': 50, 'lstm': 100, 'cnn_imu': 50}
-        valid_show = {'cnn': 100, 'lstm': 500, 'cnn_imu': 100}
+        train_show = {'cnn': int(train_show_value / 100), 'lstm': 100, 'cnn_imu': int(train_show_value / 100)}
+        valid_show = {'cnn': int(train_show_value / 50), 'lstm': 50, 'cnn_imu': int(train_show_value / 50)}
 
     now = datetime.datetime.now()
 
@@ -310,6 +338,7 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
                      'num_attributes': num_attributes[dataset[dataset_idx]],
                      'batch_size_train': batch_size_train[network[network_idx]][dataset[dataset_idx]],
                      'batch_size_val': batch_size_val[network[network_idx]][dataset[dataset_idx]],
+                     'num_tr_inputs': num_tr_inputs[dataset[dataset_idx]],
                      'num_classes': num_classes[dataset[dataset_idx]],
                      'label_pos': label_pos[2],
                      'file_suffix': 'results_yy{}mm{}dd{:02d}hh{:02d}mm{:02d}.xml'.format(now.year,
