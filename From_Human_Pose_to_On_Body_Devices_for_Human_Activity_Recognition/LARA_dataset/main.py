@@ -19,7 +19,25 @@ import datetime
 
 def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, dataset_fine_tuning_idx=0,
                   reshape_input=False, learning_rates_idx=0, name_counter=0, freeze=0, percentage_idx=0,
-                  fully_convolutional=False, sacred=False):
+                  fully_convolutional=False):
+    """
+    Set a configuration of all the possible variables that were set in the experiments.
+    This includes the datasets, hyperparameters for training, networks, outputs, datasets paths,
+    results paths
+
+    @param dataset_idx: id of dataset
+    @param network_idx: id of network 0 for tcnn, 1, for tcnn-lstm, 2 tcnn-IMU
+    @param output_idx: 0 for softmax, 1 for attributes
+    @param usage_modus_idx: id of the modus 0 for train, 1 for test, 2 for evolution, 3 for train_final,...
+    @param dataset_fine_tuning_idx: id of source dataset in case of finetuning
+    @param reshape_input: reshaping the input False for [C,T] or, True for [3,C/3,T]=[[x,y,z], [sensors], Time]
+    @param learning_rates_idx: id for the Learning Rate
+    @param name_counter: counter for experiments
+    @param name_counter: 0 for freezing the CNN layers, or 1 for fine-tuning
+    @param percentage_idx: Percentage for the training dataset
+    @param fully_convolutional: False for FC or True for FCN
+    @return: configuration: dict with all the configurations
+    """
     # Flags
     plotting = False
 
@@ -353,7 +371,6 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
                      'freeze_options': freeze_options[freeze],
                      'percentages_names': percentages_names[percentage_idx],
                      'fully_convolutional': fully_convolutional,
-                     'sacred': sacred,
                      'labeltype': labeltype}
 
     return configuration
@@ -389,6 +406,9 @@ def setup_experiment_logger(logging_level=logging.DEBUG, filename=None):
 
 
 def main():
+    """
+    Run experiment for a certain set of parameters
+    """
     dataset_idx = [11]
     network_idx = [0]
     reshape_input = [False]
