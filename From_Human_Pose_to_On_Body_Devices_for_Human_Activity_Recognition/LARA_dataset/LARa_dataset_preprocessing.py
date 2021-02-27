@@ -111,7 +111,8 @@ labels_persons = {"S01": 0, "S02": 1, "S03": 2, "S04": 3, "S05": 4, "S06": 5, "S
 
 
 def select_columns_opp(data):
-    """Selection of the columns employed in the MoCAP
+    """
+    Selection of the columns employed in the MoCAP
     excluding the measurements from lower back,
     as this became the center of the human body,
     and the rest of joints are normalized
@@ -144,7 +145,8 @@ def divide_x_y(data):
     return data_t, data_x, data_y
 
 def normalize(data):
-    """Normalizes all sensor channels
+    """
+    Normalizes all sensor channels
 
     :param data: numpy integer matrix
         Sensor data
@@ -165,64 +167,60 @@ def normalize(data):
     return data
 
 
-
-def opp_sliding_window(data_x, data_y, ws, ss, label_pos_end = True):
+def opp_sliding_window(data_x, data_y, ws, ss, label_pos_end=True):
     '''
     Performs the sliding window approach on the data and the labels
-    
+
     return three arrays.
     - data, an array where first dim is the windows
     - labels per window according to end, middle or mode
     - all labels per window
-    
+
     @param data_x: ids for train
     @param data_y: ids for train
     @param ws: ids for train
     @param ss: ids for train
     @param label_pos_end: ids for train
-    '''    
-
+    '''
 
     print("Sliding window: Creating windows {} with step {}".format(ws, ss))
-    
-    data_x = sliding_window(data_x,(ws,data_x.shape[1]),(ss,1))
-    
+
+    data_x = sliding_window(data_x, (ws, data_x.shape[1]), (ss, 1))
+
     # Label from the end
     if label_pos_end:
-        data_y = np.asarray([[i[-1]] for i in sliding_window(data_y,(ws,data_y.shape[1]),(ss,1))])
+        data_y = np.asarray([[i[-1]] for i in sliding_window(data_y, (ws, data_y.shape[1]), (ss, 1))])
     else:
-    
-        #Label from the middle
         if False:
-            data_y_labels = np.asarray([[i[i.shape[0] // 2]] for i in sliding_window(data_y,(ws,data_y.shape[1]),(ss,1))])
+            # Label from the middle
+            # not used in experiments
+            data_y_labels = np.asarray(
+                [[i[i.shape[0] // 2]] for i in sliding_window(data_y, (ws, data_y.shape[1]), (ss, 1))])
         else:
-        
-            #Label according to mode
+            # Label according to mode
             try:
                 data_y_labels = []
-                for sw in sliding_window(data_y,(ws,data_y.shape[1]),(ss,1)):
+                for sw in sliding_window(data_y, (ws, data_y.shape[1]), (ss, 1)):
                     labels = np.zeros((20)).astype(int)
-                    count_l = np.bincount(sw[:,0], minlength = NUM_CLASSES)
+                    count_l = np.bincount(sw[:, 0], minlength=NUM_CLASSES)
                     idy = np.argmax(count_l)
-                    attrs = np.sum(sw[:,1:], axis = 0)
+                    attrs = np.sum(sw[:, 1:], axis=0)
                     attrs[attrs > 0] = 1
-                    labels[0] = idy  
+                    labels[0] = idy
                     labels[1:] = attrs
                     data_y_labels.append(labels)
                 data_y_labels = np.asarray(data_y_labels)
-            
-            
+
+
             except:
                 print("Sliding window: error with the counting {}".format(count_l))
                 print("Sliding window: error with the counting {}".format(idy))
                 return np.Inf
-            
-            #All labels per window
-            data_y_all = np.asarray([i[:] for i in sliding_window(data_y,(ws,data_y.shape[1]),(ss,1))])
-    
+
+            # All labels per window
+            data_y_all = np.asarray([i[:] for i in sliding_window(data_y, (ws, data_y.shape[1]), (ss, 1))])
+
     return data_x.astype(np.float32), data_y_labels.astype(np.uint8), data_y_all.astype(np.uint8)
-
-
 
 
 
@@ -245,6 +243,10 @@ def compute_max_min(ids):
     for P in persons:
         if P in ids:
             for r, R in enumerate(recordings):
+                # All of these if-cases are coming due to the naming of the recordings in the data.
+                # Not all the subjects have the same
+                # annotated recordings, nor annotators, nor annotations runs, nor scenarios.
+                # these will include all of the recordings for the subjects
                 if P in ["S01", "S02", "S03", "S04", "S05", "S06"]:
                     S = "L01"
                 else:
@@ -297,14 +299,13 @@ def compute_max_min(ids):
 
 def compute_min_num_samples(ids, boolean_classes=True, attr=0):
     '''
-    Compute the max and min values for normalizing the data.
+    Compute the minimum duration of a sequences with the same classes or attribute
     
-    
-    print max and min.
-    These values will be computed only once and the max min values
-    will be place as constants
+    This value will help selecting the best sliding window size
     
     @param ids: ids for train
+    @param boolean_classes: selecting between classes or attributes
+    @param attr: ids for attribute
     '''
 
     recordings = ['R{:02d}'.format(r) for r in range(1, 31)]
@@ -320,6 +321,10 @@ def compute_min_num_samples(ids, boolean_classes=True, attr=0):
     for P in persons:
         if P in ids:
             for r, R in enumerate(recordings):
+                # All of these if-cases are coming due to the naming of the recordings in the data.
+                # Not all the subjects have the same
+                # annotated recordings, nor annotators, nor annotations runs, nor scenarios.
+                # these will include all of the recordings for the subjects
                 if P in ["S01", "S02", "S03", "S04", "S05", "S06"]:
                     S = "L01"
                 else:
@@ -418,6 +423,10 @@ def compute_statistics_samples(ids, boolean_classes=True, attr=0):
     for P in persons:
         if P in ids:
             for r, R in enumerate(recordings):
+                # All of these if-cases are coming due to the naming of the recordings in the data.
+                # Not all the subjects have the same
+                # annotated recordings, nor annotators, nor annotations runs, nor scenarios.
+                # these will include all of the recordings for the subjects
                 if P in ["S01", "S02", "S03", "S04", "S05", "S06"]:
                     S = "L01"
                 else:

@@ -31,7 +31,6 @@ from HARWindows import HARWindows
 
 from metrics import Metrics
 
-from sacred import Experiment
 
 class Network_User(object):
     '''
@@ -509,17 +508,6 @@ class Network_User(object):
                     f1w_val.append(results_val['f1_weighted'])
                     f1m_val.append(results_val['f1_mean'])
 
-                    if self.config["sacred"]:
-                        self.exp.log_scalar("Loss_TrainVal_inTrain_{}".format(ea_itera), value=loss_train)
-                        self.exp.log_scalar("Acc_TrainVal_inTrain_{}".format(ea_itera), value=results_val['acc'])
-                        self.exp.log_scalar("F1w_TrainVal_inTrain_{}".format(ea_itera),
-                                            value=results_val['f1_weighted'])
-                        self.exp.log_scalar("F1m_TrainVal_inTrain_{}".format(ea_itera), value=results_val['f1_mean'])
-                        self.exp.log_scalar("Loss_Val_inTrain_{}".format(ea_itera), value=loss_val)
-                        self.exp.log_scalar("acc_Val_inTrain_{}".format(ea_itera).format(), value=results_val['acc'])
-                        self.exp.log_scalar("F1w_Val_inTrain_{}".format(ea_itera), value=results_val['f1_weighted'])
-                        self.exp.log_scalar("F1m_Val_inTrain_{}".format(ea_itera), value=results_val['f1_mean'])
-
                     # print statistics
                     logging.info('\n')
                     logging.info(
@@ -563,12 +551,6 @@ class Network_User(object):
                     # Metrics for training
                     #acc, f1_weighted, f1_mean, _ = metrics_obj.metric(targets=train_batch_l, predictions=feature_maps)
                     results_train = metrics_obj.metric(targets=train_batch_l, predictions=feature_maps)
-
-                    if self.config["sacred"]:
-                        self.exp.log_scalar("Loss_Train_inTrain_{}".format(ea_itera), value=loss_train)
-                        self.exp.log_scalar("Acc_Train_inTrain_{}".format(ea_itera), value=results_train['acc'])
-                        self.exp.log_scalar("F1w_Train_inTrain_{}".format(ea_itera), value=results_train['f1_weighted'])
-                        self.exp.log_scalar("F1m_Train_inTrain_{}".format(ea_itera), value=results_train['f1_mean'])
 
                     activaciones = []
                     metrics_list = []
