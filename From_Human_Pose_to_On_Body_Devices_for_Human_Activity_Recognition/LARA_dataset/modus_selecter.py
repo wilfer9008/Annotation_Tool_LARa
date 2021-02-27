@@ -16,8 +16,6 @@ import time
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
-from sacred import Experiment
-
 class Modus_Selecter(object):
     '''
     classdocs
@@ -128,11 +126,6 @@ class Modus_Selecter(object):
                                                              results_train['f1_weighted'],
                                                              results_train['f1_mean']))
 
-            if self.config["sacred"]:
-                self.exp.log_scalar("Acc_Val", value=results_train['acc'])
-                self.exp.log_scalar("F1w_Val", value=results_train['f1_weighted'])
-                self.exp.log_scalar("F1m_Val", value=results_train['f1_mean'])
-
             self.save(acc_train_ac, f1_weighted_train_ac, f1_mean_train_ac, ea_iter=iter_evl,
                       time_iter=time_train, precisions=results_train['precision'], recalls=results_train['recall'],
                       best_itera=best_itera)
@@ -147,14 +140,6 @@ class Modus_Selecter(object):
                 recalls_test.append(results_test['recall'].numpy())
 
                 time_test = time.time() - start_time_test
-
-                if self.config["sacred"]:
-                    self.exp.log_scalar("Acc_Test", value=results_test['acc'])
-                    self.exp.log_scalar("F1w_Test", value=results_test['f1_weighted'])
-                    self.exp.log_scalar("F1m_Test", value=results_test['f1_mean'])
-                    self.save(acc_test_ac, f1_weighted_test_ac, f1_mean_test_ac, ea_iter=iter_evl,
-                              type_simple='testing', confusion_matrix=confusion_matrix_test, time_iter=time_test,
-                              results=results_test)
 
         if testing:
             self.save(acc_test_ac, f1_weighted_test_ac, f1_mean_test_ac, ea_iter=iter_evl, type_simple='testing',
@@ -186,11 +171,6 @@ class Modus_Selecter(object):
                                                          results_test['f1_weighted'], results_test['f1_mean']))
 
         if not testing:
-            if self.config["sacred"]:
-                self.exp.log_scalar("Acc_Test", value=results_test['acc'])
-                self.exp.log_scalar("F1w_Test", value=results_test['f1_weighted'])
-                self.exp.log_scalar("F1m_Test", value=results_test['f1_mean'])
-
             self.save([results_test['acc']], [results_test['f1_weighted']], [results_test['f1_mean']],
                       ea_iter=0, type_simple='testing', confusion_matrix=confusion_matrix_test,
                       time_iter=elapsed_time_test, precisions=np.array(precisions_test),
