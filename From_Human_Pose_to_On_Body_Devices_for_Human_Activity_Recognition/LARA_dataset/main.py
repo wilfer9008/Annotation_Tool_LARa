@@ -418,6 +418,10 @@ def setup_experiment_logger(logging_level=logging.DEBUG, filename=None):
 def main():
     """
     Run experiment for a certain set of parameters
+
+    User is welcome to revise in detatil the configuration function
+    for more information about all of possible configurations for the experiments
+
     """
     dataset_idx = [11]
     network_idx = [0]

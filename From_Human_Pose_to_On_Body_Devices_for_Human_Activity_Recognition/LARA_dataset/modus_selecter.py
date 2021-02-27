@@ -43,9 +43,9 @@ class Modus_Selecter(object):
         This includes the datasets, hyperparameters for training, networks, outputs, datasets paths,
         results paths
 
-        @param acc_test: List of accuracies
-        @param f1_weighted_test: List of F1w
-        @param f1_mean_test: List of F1m
+        @param acc_test: List of accuracies of val or testing
+        @param f1_weighted_test: List of F1w of val or testing
+        @param f1_mean_test: List of F1m of val or testing
         @param ea_iter: Iteration of evolution
         @param type_simple: Type of experiment
         @param confusion_matrix: Confusion Matrix
@@ -106,11 +106,17 @@ class Modus_Selecter(object):
         return
 
     def train(self, itera=1, testing=False):
+        """
+        Set a configuration of all the possible variables that were set in the experiments.
+        This includes the datasets, hyperparameters for training, networks, outputs, datasets paths,
+        results paths
+
+        @param itera: training iteration, as training is repeated X number of times
+        @param testing: Enabling testing after training
+        """
 
         logging.info('    Network_selecter: Train')
 
-        #There will be only one iteration
-        #As there is not evolution
         acc_train_ac = []
         f1_weighted_train_ac = []
         f1_mean_train_ac = []
@@ -123,12 +129,16 @@ class Modus_Selecter(object):
             f1_weighted_test_ac = []
             f1_mean_test_ac = []
 
+        #There will be only one iteration
+        #As there is not evolution
         for iter_evl in range(itera):
             start_time_train = time.time()
+
+            # Training the network and obtaining the validation results
             logging.info('    Network_selecter:    Train iter 0')
-            #acc_train, f1_weighted_train, f1_mean_train, _ = self.network.evolution_evaluation(ea_iter=iter_evl)
             results_train, confusion_matrix_train, best_itera = self.network.evolution_evaluation(ea_iter=iter_evl)
 
+            # Appending results for later saving in results file
             acc_train_ac.append(results_train['acc'])
             f1_weighted_train_ac.append(results_train['f1_weighted'])
             f1_mean_train_ac.append(results_train['f1_mean'])
@@ -136,15 +146,14 @@ class Modus_Selecter(object):
             time_train = time.time() - start_time_train
 
             logging.info('    Network_selecter:    Train: elapsed time {} acc {}, '
-                         'f1_weighted {}, f1_mean {}'.format(time_train,
-                                                             results_train['acc'],
-                                                             results_train['f1_weighted'],
-                                                             results_train['f1_mean']))
+                         'f1_weighted {}, f1_mean {}'.format(time_train, results_train['acc'],
+                                                             results_train['f1_weighted'], results_train['f1_mean']))
 
-            self.save(acc_train_ac, f1_weighted_train_ac, f1_mean_train_ac, ea_iter=iter_evl,
-                      time_iter=time_train, precisions=results_train['precision'], recalls=results_train['recall'],
-                      best_itera=best_itera)
+            # Saving the results
+            self.save(acc_train_ac, f1_weighted_train_ac, f1_mean_train_ac, ea_iter=iter_evl, time_iter=time_train,
+                      precisions=results_train['precision'], recalls=results_train['recall'], best_itera=best_itera)
 
+            # Testing the network
             if testing:
                 start_time_test = time.time()
                 results_test, confusion_matrix_test = self.test(testing=True)
