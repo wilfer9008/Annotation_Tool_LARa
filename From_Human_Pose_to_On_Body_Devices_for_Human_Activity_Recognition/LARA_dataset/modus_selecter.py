@@ -38,7 +38,22 @@ class Modus_Selecter(object):
 
     def save(self, acc_test, f1_weighted_test, f1_mean_test, ea_iter, type_simple='training', confusion_matrix=0,
              time_iter=0, precisions=0, recalls=0, best_itera=0):
+        """
+        Set a configuration of all the possible variables that were set in the experiments.
+        This includes the datasets, hyperparameters for training, networks, outputs, datasets paths,
+        results paths
 
+        @param acc_test: List of accuracies
+        @param f1_weighted_test: List of F1w
+        @param f1_mean_test: List of F1m
+        @param ea_iter: Iteration of evolution
+        @param type_simple: Type of experiment
+        @param confusion_matrix: Confusion Matrix
+        @param time_iter: Time of experiment run
+        @param precisions: List of class precisions
+        @param recalls: List of class recalls
+        @param best_itera: Best evolution iteration
+        """
         xml_file_path = self.config['folder_exp'] + self.config['file_suffix']
 
         xml_root = ET.Element("Experiment_{}".format(self.config["name_counter"]))
