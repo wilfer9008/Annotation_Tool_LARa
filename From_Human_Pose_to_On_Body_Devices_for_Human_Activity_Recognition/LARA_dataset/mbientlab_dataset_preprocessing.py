@@ -17,8 +17,7 @@ from sliding_window import sliding_window
 import pickle
 
 # folder path
-FOLDER_PATH = '/Users/fmoya/Documents/Dok/DFG_Project/mbientlab/'
-
+FOLDER_PATH = "path_to_dataset_LARa_Mbientlab"
 
 PERSONS = ['S14']
 
@@ -42,12 +41,13 @@ NUM_ATTRIBUTES = 19
 def reader_data(path):
     '''
     gets data from csv file
-    data contains 134 columns
+    data contains 30 columns
     the first column corresponds to sample
     the second column corresponds to class label
-    the rest 132 columns corresponds to all of the joints (x,y,z) measurements
+    the rest 30 columns corresponds to all of the joints (x,y,z) measurements
 
-    returns a numpy array
+    returns:
+    A dict with the sequence, time and label
 
     @param path: path to file
     '''
@@ -123,13 +123,12 @@ def opp_sliding_window(data_x, data_y, ws, ss, label_pos_end=True):
     if label_pos_end:
         data_y = np.asarray([[i[-1]] for i in sliding_window(data_y, (ws, data_y.shape[1]), (ss, 1))])
     else:
-
-        # Label from the middle
         if False:
+            # Label from the middle
+            # not used in experiments
             data_y_labels = np.asarray(
                 [[i[i.shape[0] // 2]] for i in sliding_window(data_y, (ws, data_y.shape[1]), (ss, 1))])
         else:
-
             # Label according to mode
             try:
                 data_y_labels = []
@@ -143,8 +142,6 @@ def opp_sliding_window(data_x, data_y, ws, ss, label_pos_end=True):
                     labels[1:] = attrs
                     data_y_labels.append(labels)
                 data_y_labels = np.asarray(data_y_labels)
-
-
             except:
                 print("Sliding window: error with the counting {}".format(count_l))
                 print("Sliding window: error with the counting {}".format(idy))
@@ -157,7 +154,8 @@ def opp_sliding_window(data_x, data_y, ws, ss, label_pos_end=True):
 
 
 def divide_x_y(data):
-    """Segments each sample into features and label
+    """
+    Segments each sample into features and label
 
     :param data: numpy integer matrix
         Sensor data
@@ -175,18 +173,20 @@ def divide_x_y(data):
 # Generate data
 #################
 def generate_data(ids, sliding_window_length, sliding_window_step, data_dir=None,
-                  identity_bool = False, usage_modus = 'train'):
+                  identity_bool=False, usage_modus='train'):
     '''
-    creates files for each of the sequences extracted from a file
+    creates files for each of the sequences, which are extracted from a file
     following a sliding window approach
 
-
-    returns a numpy array
+    returns
+    Sequences are stored in given path
 
     @param ids: ids for train, val or test
     @param sliding_window_length: length of window for segmentation
     @param sliding_window_step: step between windows for segmentation
     @param data_dir: path to dir where files will be stored
+    @param identity_bool: selecting for identity experiment
+    @param usage_modus: selecting Train, Val or testing
     '''
 
     persons = ["S01", "S02", "S03", "S04", "S05", "S06", "S07", "S08", "S09", "S10", "S11", "S12", "S13", "S14"]
@@ -203,6 +203,9 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir=None
             print("\n6 No Person in expected IDS {}".format(P))
         else:
             if identity_bool:
+                # Selecting the proportions of the train, val or testing according to the quantity of
+                # recordings per subject, as there are not equal number of recordings per subject
+                # see dataset for checking the recording files per subject
                 if usage_modus == 'train':
                     recordings = ['R{:02d}'.format(rec) for rec in range(1, idx_train[P])]
                 elif usage_modus == 'val':
@@ -240,21 +243,16 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir=None
 
                         #data_t, data_x, data_y = divide_x_y(data)
                         #del data_t
-
                     except:
                         print(
                             "2 In generating data, Error getting the data {}".format(FOLDER_PATH
                                                                                        + file_name_data))
                         continue
-
                     try:
-
                         data_x = norm_mbientlab(data_x)
-
                     except:
                         print("\n3  In generating data, Plotting {}".format(FOLDER_PATH + file_name_data))
                         continue
-
                     try:
                         # checking if annotations are consistent
                         if data_x.shape[0] == data_x.shape[0]:
@@ -316,6 +314,14 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir=None
 
 
 def generate_CSV(csv_dir, type_file, data_dir):
+    '''
+    Generate CSV file with path to all (Training) of the segmented sequences
+    This is done for the DATALoader for Torch, using a CSV file with all the paths from the extracted
+    sequences.
+
+    @param csv_dir: Path to the dataset
+    @param data_dir: Path of the training data
+    '''
     f = []
     for dirpath, dirnames, filenames in os.walk(data_dir):
         for n in range(len(filenames)):
@@ -327,6 +333,15 @@ def generate_CSV(csv_dir, type_file, data_dir):
 
 
 def generate_CSV_final(csv_dir, data_dir1, data_dir2):
+    '''
+    Generate CSV file with path to all (Training and Validation) of the segmented sequences
+    This is done for the DATALoader for Torch, using a CSV file with all the paths from the extracted
+    sequences.
+
+    @param csv_dir: Path to the dataset
+    @param data_dir1: Path of the training data
+    @param data_dir2: Path of the validation data
+    '''
     f = []
     for dirpath, dirnames, filenames in os.walk(data_dir1):
         for n in range(len(filenames)):
@@ -341,8 +356,14 @@ def generate_CSV_final(csv_dir, data_dir1, data_dir2):
     return f
 
 
-
 def create_dataset(identity_bool = False):
+    '''
+    create dataset
+    - Segmentation
+    - Storing sequences
+
+    @param half: set for creating dataset with half the frequence.
+    '''
     train_ids = ["S07", "S08", "S09", "S10"]
     train_final_ids = ["S07", "S08", "S09", "S10", "S11", "S12"]
     val_ids = ["S11", "S12"]
@@ -352,8 +373,11 @@ def create_dataset(identity_bool = False):
 
     # general_statistics(train_ids)
 
-    #base_directory = '/data/fmoya/HAR/datasets/mbientlab_50_recordings/'
-    base_directory = '/data/fmoya/HAR/datasets/mbientlab/'
+    # base_directory = '/path_where_sequences_will_ve_stored/mbientlab_10_persons/'
+    # base_directory = '/path_where_sequences_will_ve_stored/mbientlab_50_persons/'
+    # base_directory = '/path_where_sequences_will_ve_stored/mbientlab_10_recordings/'
+    #base_directory = '/path_where_sequences_will_ve_stored/mbientlab_50_recordings/'
+    base_directory = '/path_where_sequences_will_ve_stored/mbientlab/'
 
     data_dir_train = base_directory + 'sequences_train/'
     data_dir_val = base_directory + 'sequences_val/'
@@ -373,16 +397,13 @@ def create_dataset(identity_bool = False):
 
 def statistics_measurements():
     '''
-    creates files for each of the sequences extracted from a file
-    following a sliding window approach
+    Compute some statistics of the duration of the sequences data:
 
+    print:
+    Max and Min durations per class or attr
+    Mean and Std durations per class or attr
 
-    returns a numpy array
-
-    @param ids: ids for train, val or test
-    @param sliding_window_length: length of window for segmentation
-    @param sliding_window_step: step between windows for segmentation
-    @param data_dir: path to dir where files will be stored
+    @param
     '''
 
     train_final_ids = ["P07", "P08", "P09", "P10", "P11", "P12"]
@@ -431,6 +452,15 @@ def statistics_measurements():
 
 
 def norm_mbientlab(data):
+    """
+    Normalizes all sensor channels
+    Zero mean and unit variance
+
+    :param data: numpy integer matrix
+        Sensor data
+    :return:
+        Normalized sensor data
+    """
 
     mean_values = np.array([-0.6018319,   0.234877,    0.2998928,   1.11102944,  0.17661719, -1.41729978,
                    0.03774093,  1.0202137,  -0.1362719,   1.78369919,  2.4127946,  -1.36437627,
@@ -464,7 +494,9 @@ def norm_mbientlab(data):
 
 
 if __name__ == '__main__':
-
+    # Creating dataset for LARa Mbientlab
+    # Set the path to where the segmented windows will be located
+    # This path will be needed for the main.py
 
     create_dataset()
     # statistics_measurements()

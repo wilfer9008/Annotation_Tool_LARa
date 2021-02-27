@@ -20,7 +20,7 @@ from scipy.stats import norm, mode
 
 
 #folder path of the dataset
-FOLDER_PATH = "path_to_dataset"
+FOLDER_PATH = "path_to_dataset_LARa_Mocap"
 
 # Hardcoded number of sensor channels employed in the MoCap dataset
 NB_SENSOR_CHANNELS = 134
