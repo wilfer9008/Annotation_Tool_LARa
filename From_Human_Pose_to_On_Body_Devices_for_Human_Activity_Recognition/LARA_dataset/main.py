@@ -7,6 +7,9 @@ Created on May 17, 2019
 from __future__ import print_function
 import os
 import logging
+import torch
+import numpy as np
+import random
 
 import platform
 from modus_selecter import Modus_Selecter
@@ -402,6 +405,17 @@ def main():
 
 
 if __name__ == '__main__':
+
+    #Setting the same RNG seed
+    seed = 42
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    # Torch RNG
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    # Python RNG
+    np.random.seed(seed)
+    random.seed(seed)
 
     print("Python Platform {}".format(platform.python_version()))
     
