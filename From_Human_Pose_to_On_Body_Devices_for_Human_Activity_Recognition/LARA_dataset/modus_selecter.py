@@ -107,9 +107,8 @@ class Modus_Selecter(object):
 
     def train(self, itera=1, testing=False):
         """
-        Set a configuration of all the possible variables that were set in the experiments.
-        This includes the datasets, hyperparameters for training, networks, outputs, datasets paths,
-        results paths
+        Train method. Train network for a certain number of repetitions
+        computing the val performance, Testing using test(), saving the performances
 
         @param itera: training iteration, as training is repeated X number of times
         @param testing: Enabling testing after training
@@ -178,6 +177,14 @@ class Modus_Selecter(object):
 
 
     def test(self, testing = False):
+        """
+        Test method. Testing the network , saving the performances
+
+        @param itera: training iteration, as training is repeated X number of times
+        @param testing: Enabling testing after training
+        @return results_test: dict with the results of the testing
+        @return confusion_matrix_test: confusion matrix of the text
+        """
 
         start_time_test = time.time()
         precisions_test = []
@@ -205,7 +212,9 @@ class Modus_Selecter(object):
 
 
     def net_modus(self):
-
+        """
+        Setting the training, validation, evolution and final training.
+        """
         logging.info('    Network_selecter: Net modus: {}'.format(self.config['usage_modus']))
         if self.config['usage_modus'] == 'train':
             self.train(itera=5, testing=True)

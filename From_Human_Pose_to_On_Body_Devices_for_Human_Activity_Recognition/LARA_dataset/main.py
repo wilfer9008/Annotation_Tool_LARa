@@ -36,7 +36,7 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
     @param name_counter: 0 for freezing the CNN layers, or 1 for fine-tuning
     @param percentage_idx: Percentage for the training dataset
     @param fully_convolutional: False for FC or True for FCN
-    @return: configuration: dict with all the configurations
+    @return configuration: dict with all the configurations
     """
     # Flags
     plotting = False
