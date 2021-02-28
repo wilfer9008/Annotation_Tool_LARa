@@ -325,12 +325,6 @@ class Network_User(object):
                 criterion = nn.BCELoss()
             elif self.config["fully_convolutional"] == "FC":
                 criterion = nn.BCELoss()
-        elif self.config['output'] == 'identity':
-            logging.info('        Network_User:    Train:    setting criterion optimizer Softmax')
-            if self.config["fully_convolutional"] == "FCN":
-                criterion = nn.CrossEntropyLoss()
-            elif self.config["fully_convolutional"] == "FC":
-                criterion = nn.CrossEntropyLoss()
 
         # Setting the freezing or not freezing from conv layers
         if self.config['freeze_options']:
@@ -471,8 +465,6 @@ class Network_User(object):
                     train_batch_l = train_batch_l.to(self.device, dtype=torch.long) #labels for crossentropy needs long type
                 elif self.config['output'] == 'attribute':
                     train_batch_l = train_batch_l.to(self.device, dtype=torch.float) #labels for binerycrossentropy needs float type
-                elif self.config['output'] == 'identity':
-                    train_batch_l = train_batch_l.to(self.device, dtype=torch.long) #labels for crossentropy needs long type
 
                 # forward + backward + optimize
                 if self.config["dataset"] == "virtual_quarter" or self.config["dataset"] == "mocap_quarter" \
@@ -487,8 +479,6 @@ class Network_User(object):
                     loss = criterion(feature_maps, train_batch_l) * (1 / self.config['accumulation_steps'])
                 elif self.config['output'] == 'attribute':
                     loss = criterion(feature_maps, train_batch_l[:, 1:]) * (1 / self.config['accumulation_steps'])
-                elif self.config['output'] == 'identity':
-                    loss = criterion(feature_maps, train_batch_l) * (1 / self.config['accumulation_steps'])
                 loss.backward()
 
                 if (itera + 1) % self.config['accumulation_steps'] == 0:
@@ -717,8 +707,6 @@ class Network_User(object):
                     # labels for binerycrossentropy needs float type
                     test_batch_l = test_batch_l.to(self.device, dtype=torch.float)
                     # labels for crossentropy needs long type
-                elif self.config['output'] == 'identity':
-                    test_batch_l = test_batch_l.to(self.device, dtype=torch.long)
 
                 # forward
                 if self.config["dataset"] == "virtual_quarter" or self.config["dataset"] == "mocap_quarter" or\
@@ -731,8 +719,6 @@ class Network_User(object):
                     loss = criterion(predictions, test_batch_l)
                 elif self.config['output'] == 'attribute':
                     loss = criterion(predictions, test_batch_l[:, 1:])
-                elif self.config['output'] == 'identity':
-                    loss = criterion(predictions, test_batch_l)
                 loss_val = loss_val + loss.item()
 
                 # Concatenating all of the batches for computing the metrics
@@ -744,8 +730,6 @@ class Network_User(object):
                         test_labels = test_labels.reshape(-1)
                     elif self.config['output'] == 'attribute':
                         test_labels = harwindow_batched_val["label"]
-                    elif self.config['output'] == 'identity':
-                        test_labels = harwindow_batched_val["identity"]
                         test_labels = test_labels.reshape(-1)
                 else:
                     predictions_val = torch.cat((predictions_val, predictions), dim=0)
@@ -754,9 +738,6 @@ class Network_User(object):
                         test_labels_batch = test_labels_batch.reshape(-1)
                     elif self.config['output'] == 'attribute':
                         test_labels_batch = harwindow_batched_val["label"]
-                    elif self.config['output'] == 'identity':
-                        test_labels_batch = harwindow_batched_val["identity"]
-                        test_labels_batch = test_labels_batch.reshape(-1)
                     test_labels = torch.cat((test_labels, test_labels_batch), dim=0)
 
                 sys.stdout.write("\rValidating: Batch  {}/{}".format(v, len(dataLoader_val)))
@@ -783,14 +764,24 @@ class Network_User(object):
     ##################################################
 
     def test(self, ea_itera):
+        '''
+        Testing a network
+
+        @param ea_itera: evolution iteration
+        @return results_test: dict with testing results
+        @return confusion matrix: confusion matrix of testing results
+        '''
         logging.info('        Network_User:    Test ---->')
 
+        # Setting the testing set
         logging.info('        Network_User:     Creating Dataloader---->')
         harwindows_test = HARWindows(csv_file=self.config['dataset_root'] + "test.csv",
                                      root_dir=self.config['dataset_root'])
 
         dataLoader_test = DataLoader(harwindows_test, batch_size=self.config['batch_size_train'], shuffle=False)
 
+        # Creating a network and loading the weights for testing
+        # network is loaded from saved file in the folder of experiment
         logging.info('        Network_User:    Test:    creating network')
         if self.config['network'] == 'cnn' or self.config['network'] == 'cnn_imu':
             network_obj = Network(self.config)
@@ -802,19 +793,17 @@ class Network_User(object):
             logging.info('        Network_User:    Test:    setting device')
             network_obj.to(self.device)
 
-        # Setting loss
+        # Setting loss, only for being measured. Network wont be trained
         if self.config['output'] == 'softmax':
             logging.info('        Network_User:    Test:    setting criterion optimizer Softmax')
             criterion = nn.CrossEntropyLoss()
         elif self.config['output'] == 'attribute':
             logging.info('        Network_User:    Test:    setting criterion optimizer Attribute')
             criterion = nn.BCELoss()
-        elif self.config['output'] == 'identity':
-            logging.info('        Network_User:    Test:    setting criterion optimizer Softmax')
-            criterion = nn.CrossEntropyLoss()
 
         loss_test = 0
 
+        # Creating metric object
         metrics_obj = Metrics(self.config, self.device, self.attrs)
 
         logging.info('        Network_User:    Testing')
@@ -822,7 +811,7 @@ class Network_User(object):
         # loop for testing
         with torch.no_grad():
             for v, harwindow_batched_test in enumerate(dataLoader_test):
-                #Selecting batch
+                # Selecting batch
                 test_batch_v = harwindow_batched_test["data"]
                 if self.config['output'] == 'softmax':
                     if self.config["fully_convolutional"] == "FCN":
@@ -834,47 +823,34 @@ class Network_User(object):
                 elif self.config['output'] == 'attribute':
                     if self.config["fully_convolutional"] == "FCN":
                         test_batch_l = harwindow_batched_test["labels"]
-                        # test_batch_l = harwindow_batched_test["label"][:,1:]
                     elif self.config["fully_convolutional"] == "FC":
                         test_batch_l = harwindow_batched_test["label"]
-                        # test_batch_l = harwindow_batched_test["label"][:,1:]
-                elif self.config['output'] == 'identity':
-                    if self.config["fully_convolutional"] == "FCN":
-                        test_batch_l = harwindow_batched_test["identity"]
-                        test_batch_l = test_batch_l.reshape(-1)
-                    elif self.config["fully_convolutional"] == "FC":
-                        test_batch_l = harwindow_batched_test["identity"]
-                        test_batch_l = test_batch_l.reshape(-1)
 
-                #Sending to GPU
+                # Sending to GPU
                 test_batch_v = test_batch_v.to(self.device, dtype=torch.float)
                 if self.config['output'] == 'softmax':
-                    #test_batch_l = torch.from_numpy(test_batch_l)
-                    #print(test_batch_l.type())
                     test_batch_l = test_batch_l.to(self.device, dtype=torch.long)
-                    #test_batch_l = test_batch_l.to(self.device,
-                    #                               dtype=torch.LongTensor)  # labels for crossentropy needs long type
+                    # labels for crossentropy needs long type
                 elif self.config['output'] == 'attribute':
-                    test_batch_l = test_batch_l.to(self.device,
-                                                   dtype=torch.float)  # labels for binerycrossentropy needs float type
-                elif self.config['output'] == 'identity':
-                    test_batch_l = test_batch_l.to(self.device, dtype=torch.long)
+                    # labels for binerycrossentropy needs float type
+                    test_batch_l = test_batch_l.to(self.device, dtype=torch.float)
 
-                #forward
+                # Forward pass
                 if self.config["dataset"] == "virtual_quarter" or self.config["dataset"] == "mocap_quarter" or \
                         self.config["dataset"] == "mbientlab_quarter":
                     idx_frequency = np.arange(0, 100, 4)
                     test_batch_v = test_batch_v[:, :, idx_frequency, :]
-                    # logging.info('\n        Network_User:    testing:    new size {}'.format(test_batch_v.size()))
                 predictions = network_obj(test_batch_v)
                 if self.config['output'] == 'softmax':
                     loss = criterion(predictions, test_batch_l)
                 elif self.config['output'] == 'attribute':
-                    loss = criterion(predictions, test_batch_l[:,1:])
-                elif self.config['output'] == 'identity':
-                    loss = criterion(predictions, test_batch_l)
+                    loss = criterion(predictions, test_batch_l[:, 1:])
+
+                # Summing the loss
                 loss_test = loss_test + loss.item()
 
+                # Concatenating all of the batches for computing the metrics for the entire testing set
+                # and not only for a batch
                 # As creating an empty tensor and sending to device and then concatenating isnt working
                 if v == 0:
                     predictions_test = predictions
@@ -882,22 +858,14 @@ class Network_User(object):
                         test_labels = harwindow_batched_test["label"][:, 0]
                         test_labels = test_labels.reshape(-1)
                     elif self.config['output'] == 'attribute':
-                        #test_labels = harwindow_batched_test["label"][:, 1:]
                         test_labels = harwindow_batched_test["label"]
-                    elif self.config['output'] == 'identity':
-                        test_labels = harwindow_batched_test["identity"]
-                        test_labels = test_labels.reshape(-1)
                 else:
                     predictions_test = torch.cat((predictions_test, predictions), dim=0)
                     if self.config['output'] == 'softmax':
                         test_labels_batch = harwindow_batched_test["label"][:, 0]
                         test_labels_batch = test_labels_batch.reshape(-1)
                     elif self.config['output'] == 'attribute':
-                        #test_labels_batch = harwindow_batched_test["label"][:, 1:]
                         test_labels_batch = harwindow_batched_test["label"]
-                    elif self.config['output'] == 'identity':
-                        test_labels_batch = harwindow_batched_test["identity"]
-                        test_labels_batch = test_labels_batch.reshape(-1)
                     test_labels = torch.cat((test_labels, test_labels_batch), dim=0)
 
                 sys.stdout.write("\rTesting: Batch  {}/{}".format(v, len(dataLoader_test)))
@@ -905,10 +873,9 @@ class Network_User(object):
 
         elapsed_time_test = time.time() - start_time_test
 
-        #Computing metrics
+        #Computing metrics for the entire testing set
         test_labels = test_labels.to(self.device, dtype=torch.float)
         logging.info('            Train:    type targets vector: {}'.format(test_labels.type()))
-        #acc_test, f1_weighted_test, f1_mean_test, predictions_labels = metrics_obj.metric(test_labels, predictions_test)
         results_test = metrics_obj.metric(test_labels, predictions_test)
 
         # print statistics
@@ -923,16 +890,13 @@ class Network_User(object):
             test_labels = test_labels
         elif self.config['output'] == 'attribute':
             test_labels = test_labels[:, 0]
-        elif self.config['output'] == 'identity':
-            test_labels = test_labels
 
         # Computing confusion matrix
         confusion_matrix = np.zeros((self.config['num_classes'], self.config['num_classes']))
-
         for cl in range(self.config['num_classes']):
             pos_tg = test_labels == cl
             pos_pred = predictions_labels[pos_tg]
-            bincount = np.bincount(pos_pred.astype(int), minlength = self.config['num_classes'])
+            bincount = np.bincount(pos_pred.astype(int), minlength=self.config['num_classes'])
             confusion_matrix[cl, :] = bincount
 
         logging.info("        Network_User:        Testing:    Confusion matrix \n{}\n".format(confusion_matrix.astype(int)))
@@ -946,7 +910,6 @@ class Network_User(object):
         logging.info("        Network_User:        Validating:    percentage Pred \n{}\n".format(percentage_pred))
 
         #plot predictions
-
         if self.config["plotting"]:
             fig = plt.figure()
             axis_test = fig.add_subplot(111)
@@ -966,49 +929,6 @@ class Network_User(object):
             fig.canvas.draw()
             plt.pause(2.0)
             axis_test.cla()
-
-        '''
-        if True:
-            if self.config["output"] == "softmax":
-                network_config = {
-                    'NB_sensor_channels': self.config['NB_sensor_channels'],
-                    'sliding_window_length': self.config['sliding_window_length'],
-                    'filter_size': self.config['filter_size'],
-                    'num_filters': self.config['num_filters'],
-                    'reshape_input': self.config['reshape_input'],
-                    'network': self.config['network'],
-                    'output': self.config['output'],
-                    'num_classes': self.config['num_classes'],
-                    'num_attributes': self.config['num_attributes'],
-                    'labeltype': 'class'
-                }
-                logging.info('        Network_User:            Saving the network')
-
-                torch.save({'state_dict': network_obj.state_dict(),
-                            'network_config': network_config,
-                            'att_rep': self.attrs},
-                           self.config['folder_exp'] + 'class_network.pt')
-            elif self.config["output"] == "attribute":
-                network_config = {
-                    'NB_sensor_channels': self.config['NB_sensor_channels'],
-                    'sliding_window_length': self.config['sliding_window_length'],
-                    'filter_size': self.config['filter_size'],
-                    'num_filters': self.config['num_filters'],
-                    'reshape_input': self.config['reshape_input'],
-                    'network': self.config['network'],
-                    'output': self.config['output'],
-                    'num_classes': self.config['num_classes'],
-                    'num_attributes': self.config['num_attributes'],
-                    'labeltype': 'attributes'
-                }
-
-                logging.info('        Network_User:            Saving the network')
-
-                torch.save({'state_dict': network_obj.state_dict(),
-                            'network_config': network_config,
-                            'att_rep': self.attrs},
-                           self.config['folder_exp'] + 'attrib_network.pt')
-        '''
 
         del test_batch_v, test_batch_l
         del predictions, predictions_test
