@@ -518,8 +518,8 @@ class Network_User(object):
                     #Setting the network to eval mode
                     network_obj.eval()
 
-                    # Metrics for training
-                    #acc, f1_weighted, f1_mean, _ = metrics_obj.metric(targets=train_batch_l, predictions=feature_maps)
+                    # Metrics for training for keeping the same number of metrics for val and training
+                    # Metrics return a dict with the metrics.
                     results_train = metrics_obj.metric(targets=train_batch_l, predictions=feature_maps)
                     loss_train_val.append(loss_train)
                     accs_train_val.append(results_train['acc'])
@@ -527,12 +527,13 @@ class Network_User(object):
                     f1m_train_val.append(results_train['f1_mean'])
 
                     # Validation
+                    # Calling the val() function with the current network and criterion
                     del train_batch_v, noise
-                    #acc_val, f1_weighted_val, f1_mean_val, loss_val = self.validate(network_obj, criterion)
                     results_val, loss_val = self.validate(network_obj, criterion)
 
                     elapsed_time_val = time.time() - start_time_val
 
+                    # Appending the val metrics
                     losses_val.append(loss_val)
                     accs_val.append(results_val['acc'])
                     f1w_val.append(results_val['f1_weighted'])
@@ -549,8 +550,7 @@ class Network_User(object):
                         '        Network_User:        Validating:    '
                         'acc {}, f1_weighted {}, f1_mean {}'.format(results_val['acc'], results_val['f1_weighted'],
                                                                     results_val['f1_mean']))
-                    # Saving the network
-
+                    # Saving the network for the best iteration accuracy
                     if results_val['acc'] > best_acc_val:
                         network_config = {
                             'NB_sensor_channels': self.config['NB_sensor_channels'],
@@ -576,10 +576,9 @@ class Network_User(object):
                         best_itera = itera
 
 
-                # Plotting
+                # Plotting for now deprecated
                 if (itera) % self.config['train_show'] == 0:
                     # Metrics for training
-                    #acc, f1_weighted, f1_mean, _ = metrics_obj.metric(targets=train_batch_l, predictions=feature_maps)
                     results_train = metrics_obj.metric(targets=train_batch_l, predictions=feature_maps)
 
                     activaciones = []
