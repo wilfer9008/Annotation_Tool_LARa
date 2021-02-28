@@ -313,10 +313,20 @@ def interpolate(data):
 
 
 def generate_derivatives(ids):
-    #FOLDER_PATH = '/vol/actrec/DFG_Project/2019/MoCap/recordings_2019/14_Annotated_Dataset/'
-    FOLDER_PATH = '/vol/actrec/DFG_Project/2019/LARa_dataset/MoCap/recordings_2019/14_Annotated_Dataset_renamed/'
-    folder_derivative = "/vol/actrec/DFG_Project/2019/LARa_dataset/Virtual_IMUs/recordings_2019/" \
-                        "14_Annotated_Dataset_renamed/"
+    '''
+    Generate the files containing the derivatives of the sequences, what will be called virtual IMUs
+
+    THe functions will store files with the derivatives of the Mocap data for the subjects, specified with IDs,
+    and stored the files under the same name of the MoCAP recordings, keeping up the same structure of the LARA
+    dataset
+
+    @param ids: IDS of the subjects for which derivatives will be computed
+    '''
+
+    FOLDER_PATH = '/path_to_theLARa_MOCAP_dataset/'
+    folder_derivative = "path_to_theLARa_MOCAP_dataset/"
+
+    # Recording names, refer to the naming of the files in LARa dataset
     recordings = ['R{:02d}'.format(r) for r in range(1, 31)]
 
     for P in persons:
@@ -324,6 +334,10 @@ def generate_derivatives(ids):
             print("\nNo Person in expected IDS {}".format(P))
         else:
             for r, R in enumerate(recordings):
+                # All of these if-cases are coming due to the naming of the recordings in the data.
+                # Not all the subjects have the same
+                # annotated recordings, nor annotators, nor annotations runs, nor scenarios.
+                # these will include all of the recordings for the subjects
                 if P in ["S01", "S02", "S03", "S04", "S05", "S06"]:
                     S = "L01"
                 else:
