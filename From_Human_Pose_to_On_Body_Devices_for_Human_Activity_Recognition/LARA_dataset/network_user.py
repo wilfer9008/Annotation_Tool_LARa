@@ -458,13 +458,6 @@ class Network_User(object):
                         train_batch_l = harwindow_batched["labels"][:, :, 1:]
                     elif self.config["fully_convolutional"] == "FC":
                         train_batch_l = harwindow_batched["label"]
-                elif self.config['output'] == 'identity':
-                    if self.config["fully_convolutional"] == "FCN":
-                        train_batch_l = harwindow_batched["identity"]
-                        train_batch_l = train_batch_l.reshape(-1)
-                    elif self.config["fully_convolutional"] == "FC":
-                        train_batch_l = harwindow_batched["identity"]
-                        train_batch_l = train_batch_l.reshape(-1)
 
                 # Adding gaussian noise
                 noise = self.normal.sample((train_batch_v.size()))
@@ -690,6 +683,7 @@ class Network_User(object):
         # Setting the network to eval mode
         network_obj.eval()
 
+        # Creating metric object
         metrics_obj = Metrics(self.config, self.device, self.attrs)
         loss_val = 0
 
@@ -712,36 +706,19 @@ class Network_User(object):
                     elif self.config["fully_convolutional"] == "FC":
                         #train_batch_l = harwindow_batched["label"][:, 1:]
                         test_batch_l = harwindow_batched_val["label"]
-                elif self.config['output'] == 'identity':
-                    if self.config["fully_convolutional"] == "FCN":
-                        test_batch_l = harwindow_batched_val["identity"]
-                        test_batch_l = test_batch_l.reshape(-1)
-                    elif self.config["fully_convolutional"] == "FC":
-                        test_batch_l = harwindow_batched_val["identity"]
-                        test_batch_l = test_batch_l.reshape(-1)
-
-                #if self.config['output'] == 'attribute':
-                #    test_batch_l_matrix = np.zeros((test_batch_l.shape[0], self.config['num_attributes']))
-                #    for lx in range(test_batch_l.shape[0]):
-                #        test_batch_l_matrix[lx, :] = self.attrs[test_batch_l[lx]]
 
                 # Creating torch tensors
                 # test_batch_v = torch.from_numpy(test_batch_v)
                 test_batch_v = test_batch_v.to(self.device, dtype=torch.float)
                 if self.config['output'] == 'softmax':
-                    # test_batch_l = torch.from_numpy(test_batch_l)
-                    # test_batch_l = test_batch_l.type(dtype=torch.LongTensor)  # labels for crossentropy needs long type
+                    # labels for crossentropy needs long type
                     test_batch_l = test_batch_l.to(self.device, dtype=torch.long)
                 elif self.config['output'] == 'attribute':
-                    #test_batch_l = test_batch_l.to(dtype=torch.float)  # labels for binerycrossentropy needs float type
+                    # labels for binerycrossentropy needs float type
                     test_batch_l = test_batch_l.to(self.device, dtype=torch.float)
-                    #test_batch_l = torch.from_numpy(test_batch_l_matrix)
-                    #test_batch_l = test_batch_l.type(dtype=torch.FloatTensor)  #labels for crossentropy needs long type
+                    # labels for crossentropy needs long type
                 elif self.config['output'] == 'identity':
                     test_batch_l = test_batch_l.to(self.device, dtype=torch.long)
-
-                # Sending to GPU
-                #test_batch_l = test_batch_l.to(self.device)
 
                 # forward
                 if self.config["dataset"] == "virtual_quarter" or self.config["dataset"] == "mocap_quarter" or\
@@ -758,6 +735,7 @@ class Network_User(object):
                     loss = criterion(predictions, test_batch_l)
                 loss_val = loss_val + loss.item()
 
+                # Concatenating all of the batches for computing the metrics
                 # As creating an empty tensor and sending to device and then concatenating isnt working
                 if v == 0:
                     predictions_val = predictions
@@ -765,7 +743,6 @@ class Network_User(object):
                         test_labels = harwindow_batched_val["label"][:, 0]
                         test_labels = test_labels.reshape(-1)
                     elif self.config['output'] == 'attribute':
-                        #test_labels = harwindow_batched_val["label"][:, 1:]
                         test_labels = harwindow_batched_val["label"]
                     elif self.config['output'] == 'identity':
                         test_labels = harwindow_batched_val["identity"]
@@ -776,7 +753,6 @@ class Network_User(object):
                         test_labels_batch = harwindow_batched_val["label"][:, 0]
                         test_labels_batch = test_labels_batch.reshape(-1)
                     elif self.config['output'] == 'attribute':
-                        #test_labels_batch = harwindow_batched_val["label"][:, 1:]
                         test_labels_batch = harwindow_batched_val["label"]
                     elif self.config['output'] == 'identity':
                         test_labels_batch = harwindow_batched_val["identity"]
@@ -789,7 +765,6 @@ class Network_User(object):
         print("\n")
         # Computing metrics of validation
         test_labels = test_labels.to(self.device, dtype=torch.float)
-        #acc_val, f1_weighted_val, f1_mean_val, _ = metrics_obj.metric(test_labels, predictions_val)
         results_val = metrics_obj.metric(test_labels, predictions_val)
 
         del test_batch_v, test_batch_l
