@@ -5,7 +5,6 @@ Created on March 08, 2020
 '''
 
 
-
 import os
 import sys
 import numpy as np
@@ -14,8 +13,6 @@ import csv_reader
 from sliding_window import sliding_window
 import pickle
 import scipy.interpolate
-
-from attributes import Attributes
 
 import csv
 
@@ -29,11 +26,8 @@ from torch.utils.data import DataLoader
 
 from scipy.stats import norm, mode
 
-
 # Hardcoded number of sensor channels employed in the MoCap dataset
 NB_SENSOR_CHANNELS = 134
-
-
 
 NUM_CLASSES = 8
 NUM_ATTRIBUTES = 19
@@ -145,15 +139,16 @@ labels_persons = {"S01": 0, "S02": 1, "S03": 2, "S04": 3, "S05": 4, "S06": 5, "S
 
 
 def select_columns_opp(data):
-    """Selection of the columns employed in the MoCAP
+    """
+    Selection of the columns employed in the MoCAP
     excluding the measurements from lower back,
     as this became the center of the human body,
     and the rest of joints are normalized
     with respect to this one
 
-    :param data: numpy integer matrix
+    @param data: numpy integer matrix
         Sensor data (all features)
-    :return: numpy integer matrix
+    @return: numpy integer matrix
         Selection of features
     """
 
@@ -164,6 +159,12 @@ def select_columns_opp(data):
 
 
 def save_data_csv(data, filename):
+    '''
+    Saves a recording into a CSV file
+
+    @param data: recording
+    @param filename: path for storing the recording
+    '''
     with open(filename, 'w', newline='') as csvfile:
         spamwriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
         spamwriter.writerow(headers)
@@ -196,9 +197,9 @@ def opp_sliding_window(data_x, data_y, ws, ss, label_pos_end=True):
     if label_pos_end:
         data_y = np.asarray([[i[-1]] for i in sliding_window(data_y, (ws, data_y.shape[1]), (ss, 1))])
     else:
-
-        # Label from the middle
         if False:
+            # Label from the middle
+            # not used in experiments
             data_y_labels = np.asarray(
                 [[i[i.shape[0] // 2]] for i in sliding_window(data_y, (ws, data_y.shape[1]), (ss, 1))])
         else:
@@ -784,6 +785,10 @@ def create_dataset():
 
 
 if __name__ == '__main__':
+    # Creating dataset for LARa virtual IMUs
+    # Set the path to where the segmented windows will be located
+    # This path will be needed for the main.py
+
     train_ids = ["S01", "S02", "S03", "S04", "S05", "S07", "S08", "S09", "S10"]
     train_final_ids = ["S01", "S02", "S03", "S04", "S05", "S07", "S08", "S09", "S10", "S11", "S12"]
     val_ids = ["S05", "S11", "S12"]
@@ -794,8 +799,8 @@ if __name__ == '__main__':
 
     # compute_max_min(train_final_ids)
 
-    generate_derivatives(all_data)
+    # generate_derivatives(all_data)
 
-    #create_dataset()
+    # create_dataset()
 
     print("Done")
