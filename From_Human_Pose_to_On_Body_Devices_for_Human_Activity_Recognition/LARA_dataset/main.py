@@ -239,7 +239,8 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
     # Evolution
     evolution_iter = 10000
 
-    # Results will be stored in different folders according to the dataset and network
+    # Results and network will be stored in different folders according to the dataset and network
+    # Network that will be trained and tested are stored in these folders
     # This as a sort of organisation for tracking the experiments
     # dataset/network/output/MLP_type/input_shape/
     # dataset/network/output/MLP_type/input_shape/experiment

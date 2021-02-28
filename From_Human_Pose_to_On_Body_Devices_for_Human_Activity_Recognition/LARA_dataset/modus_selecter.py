@@ -39,9 +39,9 @@ class Modus_Selecter(object):
     def save(self, acc_test, f1_weighted_test, f1_mean_test, ea_iter, type_simple='training', confusion_matrix=0,
              time_iter=0, precisions=0, recalls=0, best_itera=0):
         """
-        Set a configuration of all the possible variables that were set in the experiments.
-        This includes the datasets, hyperparameters for training, networks, outputs, datasets paths,
-        results paths
+        Save the results of traiing and testing according to the configuration.
+        As training is repeated several times, results are appended, and mean and std of all the repetitions
+        are computed.
 
         @param acc_test: List of accuracies of val or testing
         @param f1_weighted_test: List of F1w of val or testing
@@ -190,10 +190,12 @@ class Modus_Selecter(object):
         precisions_test = []
         recalls_test = []
 
+        # Testing the network in folder (according to the conf)
         results_test, confusion_matrix_test, _ = self.network.evolution_evaluation(ea_iter=0, testing=testing)
 
         elapsed_time_test = time.time() - start_time_test
 
+        # Appending results for later saving in results file
         precisions_test.append(results_test['precision'].numpy())
         recalls_test.append(results_test['recall'].numpy())
 
@@ -201,6 +203,7 @@ class Modus_Selecter(object):
                      'f1_weighted {}, f1_mean {}'.format(elapsed_time_test, results_test['acc'],
                                                          results_test['f1_weighted'], results_test['f1_mean']))
 
+        # Saving the results
         if not testing:
             self.save([results_test['acc']], [results_test['f1_weighted']], [results_test['f1_mean']],
                       ea_iter=0, type_simple='testing', confusion_matrix=confusion_matrix_test,
@@ -221,6 +224,7 @@ class Modus_Selecter(object):
         elif self.config['usage_modus'] == 'test':
             self.test()
         elif self.config['usage_modus'] == 'evolution':
+            # Not implementing here, see paper ICPR2018
             self.evolution()
         elif self.config['usage_modus'] == 'train_final':
             self.train(itera=1,  testing=True)
