@@ -946,12 +946,18 @@ class Network_User(object):
     ##################################################
 
     def evolution_evaluation(self, ea_iter, testing = False):
+        '''
+        Organises the evolution, training, testing or validating
+
+        @param ea_itera: evolution iteration
+        @param testing: Setting testing in training or only testing
+        @return results: dict with validating/testing results
+        @return confusion_matrix: dict with validating/testing results
+        @return best_itera: best iteration for training
+        '''
 
         logging.info('        Network_User: Evolution evaluation iter {}'.format(ea_iter))
 
-        #acc_test = 0
-        #f1_weighted_test = 0
-        #f1_mean_test = 0
         confusion_matrix = 0
         best_itera = 0
         if testing:
@@ -962,7 +968,6 @@ class Network_User(object):
                 logging.info('        Network_User: Training')
 
                 results, best_itera = self.train(ea_iter)
-                #acc_test, f1_weighted_test, f1_mean_test = self.test(ea_iter)
 
             elif self.config['usage_modus'] == 'evolution':
                 logging.info('        Network_User: Evolution')
