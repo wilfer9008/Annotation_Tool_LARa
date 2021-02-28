@@ -232,6 +232,13 @@ def opp_sliding_window(data_x, data_y, ws, ss, label_pos_end=True):
 
 
 def interpolate(data):
+    '''
+    Interpolates the sequences per channel for generating spline approximation funtions of a short period of time
+    The spline approximation functions are derivated for generating virtual IMUs
+
+    @param data: recording
+    @return derivatives: @nd derivative of local spline interpolations of the data per channel
+    '''
 
     """
     g, ax_x = plt.subplots(4, sharex=False)
