@@ -228,7 +228,7 @@ class Network_User(object):
 
     def set_required_grad(self, network):
         '''
-        Seeting the computing of the gradients for some layers as False
+        Setting the computing of the gradients for some layers as False
         This will act as the freezing of layers
 
         @param network: target network
@@ -268,6 +268,13 @@ class Network_User(object):
 
 
     def train(self, ea_itera):
+        '''
+        Training and validating a network
+
+        @param ea_itera: evolution iteration
+        @return results_val: network with frozen layers
+        @return best_itera: network with frozen layers
+        '''
 
         logging.info('        Network_User: Train---->')
 
@@ -276,6 +283,8 @@ class Network_User(object):
         #    harwindows_train = HARWindows(csv_file=self.config['dataset_root'] + "train_{}.csv".format(self.config["percentages_names"]),
         #                                  root_dir=self.config['dataset_root'])
         #else:
+
+        # Selecting the training sets, either train or train final (train  + Validation)
         if self.config['usage_modus'] == 'train':
             harwindows_train = HARWindows(csv_file=self.config['dataset_root'] + "train.csv",
                                           root_dir=self.config['dataset_root'])
@@ -286,14 +295,16 @@ class Network_User(object):
             harwindows_train = HARWindows(csv_file=self.config['dataset_root'] + "train.csv",
                                          root_dir=self.config['dataset_root'])
 
+        # Creating the dataloader
         dataLoader_train = DataLoader(harwindows_train, batch_size=self.config['batch_size_train'], shuffle=True)
 
+        # Setting the network
         logging.info('        Network_User:    Train:    creating network')
         if self.config['network'] == 'cnn' or self.config['network'] == 'cnn_imu':
             network_obj = Network(self.config)
             network_obj.init_weights()
 
-            # IF finetuning, load the weights
+            # IF finetuning, load the weights from a source dataset
             if self.config["usage_modus"] == "fine_tuning":
                 network_obj = self.load_weights(network_obj)
 
@@ -325,19 +336,20 @@ class Network_User(object):
             elif self.config["fully_convolutional"] == "FC":
                 criterion = nn.CrossEntropyLoss()
 
-
-        # Setting optimizer
+        # Setting the freezing or not freezing from conv layers
         if self.config['freeze_options']:
             network_obj = self.set_required_grad(network_obj)
 
         # Setting optimizer
         optimizer = optim.RMSprop(network_obj.parameters(), lr=self.config['lr'], alpha=0.95)
 
+        # Setting scheduler
         step_lr = self.config['epochs'] / 3
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=math.ceil(step_lr), gamma=0.1)
 
         if self.config['plotting']:
-            #Plots
+            # Plotting the input or feature maps through the network.
+            # For now deprecated, as features for all the layers arent stored.
 
             logging.info('        Network_User:    Train:    setting plotting objects')
 
@@ -377,14 +389,13 @@ class Network_User(object):
             plot_list.append(axis_list[7].plot([], [],'-b',label='loss vl')[0])
 
             # Customize the z axis.
-
             for al in range(len(axis_list)):
                 if al%2 ==0:
                     axis_list[al].set_zlim(0.0, 1.0)
                     axis_list[al].zaxis.set_major_locator(LinearLocator(10))
                     axis_list[al].zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
 
-        # Initializing lists for plots
+        # Initializing lists for plots and results
         losses_train = []
         accs_train = []
         f1w_train = []
@@ -402,9 +413,9 @@ class Network_User(object):
 
         best_acc_val = 0
 
+        # initialising object for computing metrics
         metrics_obj = Metrics(self.config, self.device, self.attrs)
 
-        # loop for training
         itera = 0
         start_time_train = time.time()
 
@@ -413,6 +424,9 @@ class Network_User(object):
 
         best_itera = 0
 
+        # loop for training
+        # Validation is not carried out per epoch, but after certain number of iterations, specified
+        # in configuration in main
         for e in range(self.config['epochs']):
             start_time_train = time.time()
             logging.info('\n        Network_User:    Train:    Training epoch {}'.format(e))
@@ -445,10 +459,8 @@ class Network_User(object):
                         train_batch_l = train_batch_l.reshape(-1)
                 elif self.config['output'] == 'attribute':
                     if self.config["fully_convolutional"] == "FCN":
-                        #train_batch_l = harwindow_batched["label"][:, 1:]
                         train_batch_l = harwindow_batched["labels"][:, :, 1:]
                     elif self.config["fully_convolutional"] == "FC":
-                        #train_batch_l = harwindow_batched["label"][:, 1:]
                         train_batch_l = harwindow_batched["label"]
                 elif self.config['output'] == 'identity':
                     if self.config["fully_convolutional"] == "FCN":
