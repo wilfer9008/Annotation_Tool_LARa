@@ -268,8 +268,8 @@ class Network_User(object):
         Training and validating a network
 
         @param ea_itera: evolution iteration
-        @return results_val: network with frozen layers
-        @return best_itera: network with frozen layers
+        @return results_val: dict with validation results
+        @return best_itera: best iteration when validating
         '''
 
         logging.info('        Network_User: Train---->')
@@ -575,8 +575,7 @@ class Network_User(object):
                         best_acc_val = results_val['acc']
                         best_itera = itera
 
-
-                # Plotting for now deprecated
+                # Computing metrics for current training batch
                 if (itera) % self.config['train_show'] == 0:
                     # Metrics for training
                     results_train = metrics_obj.metric(targets=train_batch_l, predictions=feature_maps)
@@ -588,6 +587,7 @@ class Network_User(object):
                     f1m_train.append(results_train['f1_mean'])
                     losses_train.append(loss_train)
 
+                    # Plotting for now deprecated
                     if self.config['plotting']:
                         #For plotting
                         metrics_list.append(accs_train)
@@ -631,7 +631,7 @@ class Network_User(object):
                         'Allocated {} GB Cached {} GB'.format(round(torch.cuda.memory_allocated(0)/1024**3, 1),
                                                               round(torch.cuda.memory_cached(0)/1024**3, 1)))
                     logging.info('\n\n--------------------------')
-            #Stettping the scheduler
+            #Step of the scheduler
             scheduler.step()
 
         elapsed_time_train = time.time() - start_time_train
@@ -641,6 +641,7 @@ class Network_User(object):
             '        Network_User:    Train:    epoch {} batch {} itera {} '
             'Total training time {}'.format(e, b, itera, elapsed_time_train))
 
+        # Storing the acc, f1s and losses of training and validation for the current training run
         np.savetxt(self.config['folder_exp'] + 'plots/acc_train.txt', accs_train_val, delimiter=",", fmt='%s')
         np.savetxt(self.config['folder_exp'] + 'plots/f1m_train.txt', f1m_train_val, delimiter=",", fmt='%s')
         np.savetxt(self.config['folder_exp'] + 'plots/f1w_train.txt', f1w_train_val, delimiter=",", fmt='%s')
@@ -666,13 +667,21 @@ class Network_User(object):
         return results_val, best_itera
 
 
-
     ##################################################
     ################  Validate  ######################
     ##################################################
 
     def validate(self, network_obj, criterion):
+        '''
+        Validating a network
 
+        @param network_obj: network object
+        @param criterion: torch criterion object
+        @return results_val: dict with validation results
+        @return loss: loss of the validation
+        '''
+
+        # Setting validation set and dataloader
         harwindows_val = HARWindows(csv_file=self.config['dataset_root'] + "val.csv",
                                     root_dir=self.config['dataset_root'])
 
