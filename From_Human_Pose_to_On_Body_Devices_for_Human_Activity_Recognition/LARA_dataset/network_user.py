@@ -155,8 +155,6 @@ class Network_User(object):
             axis_list[7].autoscale_view()
             axis_list[7].legend(loc='best')
 
-
-
             fig.canvas.draw()
             plt.savefig(self.config['folder_exp'] + 'training.png')
             #plt.show()
@@ -176,12 +174,19 @@ class Network_User(object):
     ##################################################
 
     def load_weights(self, network):
+        '''
+        Load weights from a trained network
+
+        @param network: target network with orthonormal initialisation
+        @return network: network with transfered CNN layers
+        '''
         model_dict = network.state_dict()
         # 1. filter out unnecessary keys
         logging.info('        Network_User:        Loading Weights')
 
         #print(torch.load(self.config['folder_exp_base_fine_tuning'] + 'network.pt')['state_dict'])
 
+        # Selects the source network according to configuration
         pretrained_dict = torch.load(self.config['folder_exp_base_fine_tuning'] + 'network.pt')['state_dict']
         logging.info('        Network_User:        Pretrained model loaded')
 
