@@ -178,7 +178,7 @@ class Network_User(object):
         Load weights from a trained network
 
         @param network: target network with orthonormal initialisation
-        @return network: network with transfered CNN layers
+        @return network: network with transferred CNN layers
         '''
         model_dict = network.state_dict()
         # 1. filter out unnecessary keys
@@ -227,6 +227,14 @@ class Network_User(object):
     ##################################################
 
     def set_required_grad(self, network):
+        '''
+        Seeting the computing of the gradients for some layers as False
+        This will act as the freezing of layers
+
+        @param network: target network
+        @return network: network with frozen layers
+        '''
+
         model_dict = network.state_dict()
         # 1. filter out unnecessary keys
         logging.info('        Network_User:        Setting Required_grad to Weights')
