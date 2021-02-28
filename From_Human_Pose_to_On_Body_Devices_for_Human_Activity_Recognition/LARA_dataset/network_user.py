@@ -67,15 +67,12 @@ class Network_User(object):
 
     def reader_att_rep(self, path: str) -> np.array:
         '''
-        gets data from csv file
-        data contains 134 columns
-        the first column corresponds to sample
-        the second column corresponds to class label
-        the rest 132 columns corresponds to all of the joints (x,y,z) measurements
+        gets attribute representation from txt file.
 
         returns a numpy array
 
         @param path: path to file
+        @param att_rep: Numpy matrix with the attribute representation
         '''
 
         att_rep = np.loadtxt(path, delimiter=',', skiprows=1)
