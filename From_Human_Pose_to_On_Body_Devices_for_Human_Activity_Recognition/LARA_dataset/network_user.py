@@ -84,7 +84,19 @@ class Network_User(object):
     ##################################################
 
     def plot(self, fig, axis_list, plot_list, metrics_list, activaciones, tgt, pred):
+        '''
+        Plots the input, and feature maps through the network.
+        Deprecated for now.
 
+        returns a numpy array
+
+        @param fig: figure object
+        @param axis_list: list with all of the axis. Each axis will represent a feature map
+        @param plot_list: list of all of the plots of the feature maps
+        @param metrics_list: Matrix with results
+        @param tgt: Target class
+        @param pred: Predicted class
+        '''
 
         logging.info('        Network_User:    Plotting')
         if self.config['plotting']:
