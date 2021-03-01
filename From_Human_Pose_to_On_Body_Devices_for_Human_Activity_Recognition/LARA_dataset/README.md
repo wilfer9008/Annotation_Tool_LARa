@@ -14,7 +14,11 @@ LARa dataset can be downloaded in https://zenodo.org/record/3862782#.XtVJOy9h3UI
  - LARa IMUs (called mbientlab)
  - LARa virtual IMUs
 
-Following the create_dataset() method in *preprocessing.py files
+Following the create_dataset() method in `*preprocessing.py` files
+
+### Dataloader using a simple CSV file:
+Please check, `HARWindows.py`
+
 
 ### Experiments
 Training/Testing, please address to the `main.py` script.
