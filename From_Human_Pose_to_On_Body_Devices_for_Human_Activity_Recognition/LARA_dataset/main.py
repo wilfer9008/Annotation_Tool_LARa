@@ -302,19 +302,20 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
     else:
         raise ("Error: Not selected fine tuning option")
 
-    dataset_root = {'mocap': folder_base + 'fmoya/HAR/datasets/MoCap_dataset/',
-                    'mbientlab': folder_base + 'fmoya/HAR/datasets/mbientlab/',
-                    'virtual': folder_base + 'fmoya/HAR/datasets/Virtual_IMUs/',
-                    'mocap_half': folder_base + 'fmoya/HAR/datasets/MoCap_dataset_half_freq/',
-                    'virtual_quarter': folder_base + 'fmoya/HAR/datasets/Virtual_IMUs/',
-                    'mocap_quarter': folder_base + 'fmoya/HAR/datasets/MoCap_dataset_half_freq/',
-                    'mbientlab_50_p': folder_base + 'fmoya/HAR/datasets/mbientlab_50_persons/',
-                    'mbientlab_10_p': folder_base + 'fmoya/HAR/datasets/mbientlab_10_persons/',
-                    'mbientlab_50_r': folder_base + 'fmoya/HAR/datasets/mbientlab_50_recordings/',
-                    'mbientlab_10_r': folder_base + 'fmoya/HAR/datasets/mbientlab_10_recordings/',
-                    'mbientlab_quarter': folder_base + 'fmoya/HAR/datasets/mbientlab/',
-                    'motionminers_real': folder_base + 'fmoya/HAR/datasets/motionminers_real/',
-                    'motionminers_flw': folder_base + 'fmoya/HAR/datasets/motionminers_flw/'}
+    # Paths are given according to the ones created in *preprocessing.py for the datasets
+    dataset_root = {'mocap': folder_base + 'MoCap_dataset/',
+                    'mbientlab': folder_base + 'mbientlab/',
+                    'virtual': folder_base + 'Virtual_IMUs/',
+                    'mocap_half': folder_base + 'MoCap_dataset_half_freq/',
+                    'virtual_quarter': folder_base + 'Virtual_IMUs/',
+                    'mocap_quarter': folder_base + 'MoCap_dataset_half_freq/',
+                    'mbientlab_50_p': folder_base + 'mbientlab_50_persons/',
+                    'mbientlab_10_p': folder_base + 'mbientlab_10_persons/',
+                    'mbientlab_50_r': folder_base + 'mbientlab_50_recordings/',
+                    'mbientlab_10_r': folder_base + 'mbientlab_10_recordings/',
+                    'mbientlab_quarter': folder_base + 'mbientlab/',
+                    'motionminers_real': folder_base + 'motionminers_real/',
+                    'motionminers_flw': folder_base + 'motionminers_flw/'}
 
     # GPU
     os.environ["CUDA_VISIBLE_DEVICES"] = "3"
