@@ -14,7 +14,7 @@ LARa dataset can be downloaded in https://zenodo.org/record/3862782#.XtVJOy9h3UI
 
 ## Example
 
-Running the `main.py` script.   
+Running the `main.py` script in LARa dataset, or Testing dataset.   
 
 ## Contact
 
