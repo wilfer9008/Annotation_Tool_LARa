@@ -29,6 +29,14 @@ class Metrics(object):
     ###########  Precision and Recall ################
     ##################################################
     def get_precision_recall(self, targets, predictions):
+        '''
+        Compute the precision and recall for all the activity classes
+
+        @param targets: torch array with targets
+        @param predictions: torch array with predictions
+        @return precision: torch array with precision of each class
+        @return recall: torch array with recall of each class
+        '''
         precision = torch.zeros((self.config['num_classes']))
         recall = torch.zeros((self.config['num_classes']))
 
@@ -67,11 +75,19 @@ class Metrics(object):
     ##################################################
 
     def f1_metric(self, targets, preds):
-        # Accuracy
+        '''
+        Compute the f1 metrics
+
+        @param targets: torch array with targets
+        @param predictions: torch array with predictions
+        @return F1_weighted: F1 weighted
+        @return F1_mean: F1 mean
+        '''
+
+        # Predictions
         if self.config['output'] == 'softmax':
             predictions = torch.argmax(preds, dim=1)
         elif self.config['output'] == 'attribute':
-            # predictions = torch.argmin(preds, dim=1)
             predictions = self.atts[torch.argmin(preds, dim=1), 0]
 
         if self.config['output'] == 'softmax':
@@ -115,12 +131,28 @@ class Metrics(object):
     ##################################################
 
     def acc_metric(self, targets, predictions):
+        '''
+        Compute the Accuracy
+
+        @param targets: torch array with targets
+        @param predictions: torch array with predictions
+        @return acc: Accuracy
+        '''
 
         # Accuracy
         if self.config['output'] == 'softmax':
-            acc = torch.sum(targets == torch.argmax(predictions, dim=1).type(dtype=torch.cuda.FloatTensor))
+            predicted_classes = torch.argmax(predictions, dim=1).type(dtype=torch.cuda.FloatTensor)
+            acc = torch.sum(targets == predicted_classes)
         elif self.config['output'] == 'attribute':
-            acc = torch.sum(targets == torch.argmin(predictions, dim=1).type(dtype=torch.cuda.FloatTensor))
+            # Classes from the distances to the attribute representation
+            # with this torch.argmin(predictions, dim=1), one computes the argument where distance is min
+            # with this self.atts[torch.argmin(predictions, dim=1), 0]
+            #  one computes the class that correspond to the argument with min distance
+            # self.atts.size() = [# of windows, classes and 19 attributes] = [# of windows, 20], [#, 20]
+            predicted_classes = self.atts[torch.argmin(predictions, dim=1), 0]
+            logging.info('            Metric:    Acc:    Target     class {}'.format(targets[0, 0]))
+            logging.info('            Metric:    Acc:    Prediction class {}'.format(predicted_classes[0]))
+            acc = torch.sum(targets[:, 0] == predicted_classes.type(dtype=torch.cuda.FloatTensor))
         acc = acc.item() / float(targets.size()[0])
 
         return acc
@@ -130,6 +162,15 @@ class Metrics(object):
     ##################################################
 
     def metric_attr(self, targets, predictions):
+        '''
+        Compute the Accuracy per attribute or attribute vector
+
+        @param targets: torch array with targets
+        @param predictions: torch array with predictions
+        @return acc_vc: Accuracy per attribute vector
+        @return acc_atr: Accuracy per attribute
+        '''
+
         # logging.info('        Network_User:    Metrics')
 
         # Accuracy per vector
@@ -146,6 +187,12 @@ class Metrics(object):
     ###################  metric  ######################
     ##################################################
     def efficient_distance(self, predictions):
+        '''
+        Compute Euclidean distance from predictions (output of sigmoid) to attribute representation
+
+        @param predictions: torch array with predictions (output from sigmoid)
+        @return distances: Euclidean Distance to each of the vectors in the attribute representation
+        '''
         euclidean = torch.nn.PairwiseDistance()
 
         predictions = predictions.repeat(self.attr.shape[0], 1, 1)
@@ -167,6 +214,15 @@ class Metrics(object):
     ##################################################
 
     def metric(self, targets, predictions):
+        '''
+        Compute the Accuracy per attribute or attribute vector
+
+        @param targets: torch array with targets
+        @param predictions: torch array with predictions
+        @return acc_vc: Accuracy per attribute vector
+        @return acc_atr: Accuracy per attribute
+        '''
+
         # logging.info('        Network_User:    Metrics')
 
         if self.config['output'] == 'attribute':
