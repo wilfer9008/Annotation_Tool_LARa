@@ -142,31 +142,31 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
     
     # Folder
     if usage_modus[usage_modus_idx] == 'train':
-        folder_exp = '/data2/fmoya/HAR/pytorch/' + dataset[dataset_idx] + '/' + \
+        folder_exp = '/path_where_results_will_be_stored/' + dataset[dataset_idx] + '/' + \
                      network[network_idx] + '/' + output[output_idx] + '/' + fully_convolutional + '/' \
                      + reshape_folder + '/' + 'experiment/'
-        folder_exp_base_fine_tuning = '/data2/fmoya/HAR/pytorch/' + dataset[dataset_fine_tuning_idx] + '/' + \
+        folder_exp_base_fine_tuning = '/path_where_results_will_be_stored/' + dataset[dataset_fine_tuning_idx] + '/' + \
                                       network[network_idx] + '/' + output[output_idx] + '/' + fully_convolutional + \
                                       '/' + reshape_folder + '/' + 'final/'
     elif usage_modus[usage_modus_idx] == 'test':
-        folder_exp = '/data2/fmoya/HAR/pytorch/' + dataset[dataset_idx] + '/' + \
+        folder_exp = '/path_where_results_will_be_stored/' + dataset[dataset_idx] + '/' + \
                      network[network_idx] + '/' + output[output_idx] + '/' + fully_convolutional + \
                      '/' + reshape_folder + '/' + 'final/'
-        folder_exp_base_fine_tuning = '/data2/fmoya/HAR/pytorch/' + dataset[dataset_fine_tuning_idx] + '/' + \
+        folder_exp_base_fine_tuning = '/path_where_results_will_be_stored/' + dataset[dataset_fine_tuning_idx] + '/' + \
                                       network[network_idx] + '/' + output[output_idx] + '/' + fully_convolutional + \
                                       '/' + reshape_folder + '/' + 'final/'
     elif usage_modus[usage_modus_idx] == 'train_final':
-        folder_exp = '/data2/fmoya/HAR/pytorch/' + dataset[dataset_idx] + '/' + \
+        folder_exp = '/path_where_results_will_be_stored/' + dataset[dataset_idx] + '/' + \
                      network[network_idx] + '/' + output[output_idx] + '/' + fully_convolutional +\
                      '/' + reshape_folder + '/' + 'final/'
-        folder_exp_base_fine_tuning = '/data2/fmoya/HAR/pytorch/' + dataset[dataset_fine_tuning_idx] + '/' + \
+        folder_exp_base_fine_tuning = '/path_where_results_will_be_stored/' + dataset[dataset_fine_tuning_idx] + '/' + \
                                       network[network_idx] + '/' + output[output_idx] + '/' + fully_convolutional + \
                                       '/' + reshape_folder + '/' + 'final/'
     elif usage_modus[usage_modus_idx] == 'fine_tuning':
-        folder_exp = '/data2/fmoya/HAR/pytorch/' + dataset[dataset_idx] + '/' + \
+        folder_exp = '/path_where_results_will_be_stored/' + dataset[dataset_idx] + '/' + \
                      network[network_idx] + '/' + output[output_idx] + '/' + fully_convolutional + \
                      '/' + reshape_folder + '/' + 'fine_tuning/'
-        folder_exp_base_fine_tuning = '/data2/fmoya/HAR/pytorch/' + dataset[dataset_fine_tuning_idx] + '/' + \
+        folder_exp_base_fine_tuning = '/path_where_results_will_be_stored/' + dataset[dataset_fine_tuning_idx] + '/' + \
                                       network[network_idx] + '/' + output[output_idx] + '/' + fully_convolutional + \
                                       '/' + reshape_folder + '/' + 'final/'
     else:
@@ -174,10 +174,10 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
 
     #dataset
     # Paths are given according to the ones created in *preprocessing.py for the datasets
-    dataset_root = {'locomotion': '/data2/fmoya/HAR/datasets/OpportunityUCIDataset/',
-                    'gesture': '/data2/fmoya/HAR/datasets/OpportunityUCIDataset/',
-                    'pamap2': '/data2/fmoya/HAR/datasets/PAMAP/',
-                    'orderpicking': '/vol/actrec/icpram-data/numpy_arrays/'}
+    dataset_root = {'locomotion': '/path_to_dataset/OpportunityUCIDataset/',
+                    'gesture': '/path_to_dataset/OpportunityUCIDataset/',
+                    'pamap2': '/path_to_dataset/PAMAP/',
+                    'orderpicking': '/path_to_dataset/Order_Picking/'}
     
     #GPU
     os.environ["CUDA_VISIBLE_DEVICES"] = gpudevice
