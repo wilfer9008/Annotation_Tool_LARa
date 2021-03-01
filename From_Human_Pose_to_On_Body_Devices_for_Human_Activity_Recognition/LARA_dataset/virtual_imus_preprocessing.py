@@ -497,11 +497,12 @@ def compute_max_min(ids):
     return
 
 def normalize(data):
-    """Normalizes all sensor channels
+    """
+    Max-Min Normalization of all sensor channels
 
-    :param data: numpy integer matrix
+    @param data: numpy integer matrix
         Sensor data
-    :return:
+    @return:
         Normalized sensor data
     """
     try:
@@ -520,7 +521,14 @@ def normalize(data):
 
 
 def norm_mean_std(data):
+    """
+    Zero Mean and Unit variance Normalization of all sensor channels
 
+    @param data: numpy integer matrix
+        Sensor data
+    @return:
+        Normalized sensor data
+    """
     mean_values = np.array([-1.200e-03,  3.000e-04, -1.000e-04, -3.000e-03, -9.300e-03, -1.377e-01,
                             -1.200e-03,  3.000e-04, -1.000e-04, -2.000e-03, -1.320e-02, -1.730e-01,
                             2.050e-02, -6.800e-03, -7.500e-03, -2.100e-03, -6.500e-03, -9.690e-02,
@@ -574,7 +582,7 @@ def norm_mean_std(data):
 
     data_norm = (data - min_values) / (max_values - min_values)
 
-    data_norm[data_norm>1] = 1
+    data_norm[data_norm > 1] = 1
     data_norm[data_norm < 0] = 0
 
     #data_norm = (data - mean_array) / std_array
@@ -590,7 +598,6 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir=None
     creates files for each of the sequences extracted from a file
     following a sliding window approach
 
-
     returns a numpy array
 
     @param ids: ids for train, val or test
@@ -600,23 +607,23 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir=None
     '''
 
 
-    FOLDER_PATH = '/vol/actrec/DFG_Project/2019/LARa_dataset/MoCap/recordings_2019/14_Annotated_Dataset_renamed/'
-    folder_derivative = "/vol/actrec/DFG_Project/2019/LARa_dataset/Virtual_IMUs/recordings_2019/" \
-                        "14_Annotated_Dataset_renamed/"
+    FOLDER_PATH = '/path_to_LARa_Mocap_for_annotations/'
+    folder_derivative = "/path_to_LARa_Mocap_for_annotations/"
 
+    # Recording names, refer to the naming of the files in LARa dataset
     recordings = ['R{:02d}'.format(r) for r in range(1, 31)]
 
     counter_seq = 0
     hist_classes_all = np.zeros(NUM_CLASSES)
 
-    #g, ax_x = plt.subplots(2, sharex=False)
-    #line3, = ax_x[0].plot([], [], '-b', label='blue')
-    #line4, = ax_x[1].plot([], [], '-b', label='blue')
     for P in persons:
         if P not in ids:
             print("\nNo Person in expected IDS {}".format(P))
         else:
             for r, R in enumerate(recordings):
+                # Selecting the proportions of the train, val or testing according to the quentity of
+                # recordings per subject, as there are not equal number of recordings per subject
+                # see dataset for checking the recording files per subject
                 if P in ["S01", "S02", "S03", "S04", "S05", "S06"]:
                     S = "L01"
                 else:
@@ -662,6 +669,7 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir=None
                         labels = np.delete(labels, class_labels, 0)
                         print("\nDeleting none rows")
 
+                        # halving the frequency, as Mbientlab or MotionMiners sensors use 100Hz
                         downsampling = range(0, data.shape[0], 2)
                         data = data[downsampling]
                         labels = labels[downsampling]
@@ -673,43 +681,18 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir=None
                         print("\n In generating data, Error getting the data {}".format(FOLDER_PATH + file_name_norm))
                         continue
 
-                    '''
-                    try:
-                        # Graphic Vals for X in T
-                        line3.set_ydata(data_x[:, 0].flatten())
-                        line3.set_xdata(range(len(data_x[:, 0].flatten())))
-                        ax_x[0].relim()
-                        ax_x[0].autoscale_view()
-                        plt.draw()
-                        plt.pause(2.0)
-
-                        data_x = norm_mean_std(data_x)
-
-                        line4.set_ydata(data_x[:, 0].flatten())
-                        line4.set_xdata(range(len(data_x[:, 0].flatten())))
-                        ax_x[1].relim()
-                        ax_x[1].autoscale_view()
-                        plt.draw()
-                        plt.pause(2.0)
-                    except:
-                        print("\n In generating data, Plotting {}".format(FOLDER_PATH + file_name_norm))
-                        continue
-                    '''
-
                     try:
                         # checking if annotations are consistent
                         data_x = norm_mean_std(data_x)
                         if np.sum(data_y == labels[:, 0]) == data_y.shape[0]:
 
                             # Sliding window approach
-
                             print("Starting sliding window")
                             X, y, y_all = opp_sliding_window(data_x, labels.astype(int), sliding_window_length,
                                                              sliding_window_step, label_pos_end=False)
                             print("Windows are extracted")
 
                             # Statistics
-
                             hist_classes = np.bincount(y[:, 0], minlength=NUM_CLASSES)
                             hist_classes_all += hist_classes
                             print("Number of seq per class {}".format(hist_classes_all))
@@ -725,6 +708,7 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir=None
                                     seq = np.reshape(X[f], newshape=(1, X.shape[1], X.shape[2]))
                                     seq = np.require(seq, dtype=np.float)
 
+                                    # Storing the sequences
                                     obj = {"data": seq, "label": y[f], "labels": y_all[f]}
                                     f = open(os.path.join(data_dir, 'seq_{0:06}.pkl'.format(counter_seq)), 'wb')
                                     pickle.dump(obj, f, protocol=pickle.HIGHEST_PROTOCOL)
@@ -755,6 +739,15 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir=None
 
 
 def generate_CSV(csv_dir, data_dir):
+    '''
+    Generate CSV file with path to all (Training) of the segmented sequences
+    This is done for the DATALoader for Torch, using a CSV file with all the paths from the extracted
+    sequences.
+
+    @param csv_dir: Path to the dataset
+    @param data_dir: Path of the training data
+    '''
+
     f = []
     for dirpath, dirnames, filenames in os.walk(data_dir):
         for n in range(len(filenames)):
@@ -766,6 +759,15 @@ def generate_CSV(csv_dir, data_dir):
 
 
 def generate_CSV_final(csv_dir, data_dir1, data_dir2):
+    '''
+    Generate CSV file with path to all (Training and Validation) of the segmented sequences
+    This is done for the DATALoader for Torch, using a CSV file with all the paths from the extracted
+    sequences.
+
+    @param csv_dir: Path to the dataset
+    @param data_dir1: Path of the training data
+    @param data_dir2: Path of the validation data
+    '''
     f = []
     for dirpath, dirnames, filenames in os.walk(data_dir1):
         for n in range(len(filenames)):
@@ -782,6 +784,12 @@ def generate_CSV_final(csv_dir, data_dir1, data_dir2):
 
 
 def create_dataset():
+    '''
+    create dataset
+    - Segmentation
+    - Storing sequences
+
+    '''
     train_ids = ["S01", "S02", "S03", "S04", "S05", "S07", "S08", "S09", "S10"]
     train_final_ids = ["S01", "S02", "S03", "S04", "S05", "S07", "S08", "S09", "S10", "S11", "S12"]
     val_ids = ["S05", "S11", "S12"]
@@ -824,8 +832,10 @@ if __name__ == '__main__':
 
     # compute_max_min(train_final_ids)
 
+    # Generate derivatives of the Mocap dataset. Files will be stored following Mocap Structure
     # generate_derivatives(all_data)
 
+    # Segments sequences from the recordings and dump them in individual annotated files for Torch
     # create_dataset()
 
     print("Done")
