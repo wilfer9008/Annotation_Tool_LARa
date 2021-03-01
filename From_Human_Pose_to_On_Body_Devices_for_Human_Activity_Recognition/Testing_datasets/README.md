@@ -4,8 +4,9 @@ Implementation code for "From Human Pose to On Body Devices for Human Activity R
 Updating in progress..
 
 ## Dataset
-
-LARa dataset can be downloaded in https://zenodo.org/record/3862782#.XtVJOy9h3UI
+Pamap2 preprocessing found in CNN_IMU_rep/src/preprocessing_pamap2.py
+ Dataset can be downloaded from:
+ http://archive.ics.uci.edu/ml/datasets/pamap2+physical+activity+monitoring
 
 ## Usage
 
@@ -34,3 +35,7 @@ Dortmund, Germany
   
   
 The work on this publication was supported by Deutsche Forschungsgemeinschaft (DFG) in the context of the project Fi799/10-2, HO2403/14-2 ''Transfer Learning for Human Activity Recognition in Logistics''.
+
+
+[1] A. Reiss and D. Stricker. Introducing a New Benchmarked Dataset for Activity Monitoring. The 16th IEEE International Symposium on Wearable Computers (ISWC), 2012.
+[2] A. Reiss and D. Stricker. Creating and Benchmarking a New Dataset for Physical Activity Monitoring. The 5th Workshop on Affect and Behaviour Related Assistance (ABRA), 2012.
