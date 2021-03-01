@@ -18,9 +18,6 @@ http://archive.ics.uci.edu/ml/datasets/pamap2+physical+activity+monitoring
 
 Following the create_dataset() method in `*preprocessing.py` files
 
-### Dataloader using a simple CSV file:
-Please check, `HARWindows.py`
-
 
 ### Experiments
 Training/Testing, please address to the `main.py` script.
