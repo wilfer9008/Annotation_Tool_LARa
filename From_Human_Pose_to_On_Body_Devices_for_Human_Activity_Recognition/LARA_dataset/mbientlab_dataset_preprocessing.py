@@ -496,6 +496,14 @@ if __name__ == '__main__':
     # Set the path to where the segmented windows will be located
     # This path will be needed for the main.py
 
+    # Dataset (extracted segmented windows) will be stored in a given folder by the user,
+    # However, inside the folder, there shall be the subfolders (sequences_train, sequences_val, sequences_test)
+    # These folders and subfolfders gotta be created manually by the user
+    # This as a sort of organisation for the dataset
+    # mbientlab/sequences_train
+    # mbientlab/sequences_val
+    # mbientlab/sequences_test
+
     create_dataset()
     # statistics_measurements()
     print("Done")
