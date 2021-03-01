@@ -375,6 +375,7 @@ def generate_derivatives(ids):
                         continue
 
                     try:
+                        # Interpolating
                         print("Interpolating")
                         data = interpolate(data)
                     except:
@@ -384,7 +385,6 @@ def generate_derivatives(ids):
                     try:
                         print("\nsaving")
                         save_data_csv(data, folder_derivative + file_name_derivative)
-                        print("\nsave")
                     except:
                         print(
                             "\n In generating data, Error Saving \n"
