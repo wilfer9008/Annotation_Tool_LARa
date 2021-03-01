@@ -9,14 +9,14 @@ LARa dataset can be downloaded in https://zenodo.org/record/3862782#.XtVJOy9h3UI
 
 ## Usage
 
-# Preprocessing of:
+### Preprocessing of:
  - LARa Mocap
  - LARa IMUs (called mbientlab)
  - LARa virtual IMUs
 
 Following the create_dataset() method in *preprocessing.py files
 
-# Experiments
+### Experiments
 Training/Testing, please address to the `main.py` script.
 Experiments can set set according to a given dataset, network and output
 
