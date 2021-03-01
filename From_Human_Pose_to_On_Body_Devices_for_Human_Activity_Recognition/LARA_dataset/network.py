@@ -341,16 +341,23 @@ class Network(nn.Module):
 
 
     def forward(self, x):
+        '''
+        Forwards function, required by torch.
 
+        @param x: batch [batch, 1, Channels, Time], Channels = Sensors * 3 Axis
+        @return x: Output of the network, either Softmax or Attribute
+        '''
+
+        # Reshaping the input sequence to [batch, 3, Sensors, Time]
         if self.config["reshape_input"]:
             x = x.permute(0, 2, 1, 3)
             x = x.view(x.size()[0], x.size()[1], int(x.size()[3] / 3), 3)
             x = x.permute(0, 3, 1, 2)
 
+        # Selecting the one ot the two networks, tCNN or tCNN-IMU
         if self.config["network"] == "cnn":
             x = self.tcnn(x)
-
-        if self.config["network"] == "cnn_imu":
+        elif self.config["network"] == "cnn_imu":
             if self.config["dataset"] in ['motionminers_real', 'motionminers_flw']:
                 x_LA, x_N, x_RA = self.tcnn_imu(x)
                 x = torch.cat((x_LA, x_N, x_RA), 1)
@@ -358,6 +365,7 @@ class Network(nn.Module):
                 x_LA, x_LL, x_N, x_RA, x_RL = self.tcnn_imu(x)
                 x = torch.cat((x_LA, x_LL, x_N, x_RA, x_RL), 1)
 
+        # Selecting MLP, either FC or FCN
         if self.config["fully_convolutional"] == "FCN":
             x = F.dropout(x, training=self.training)
             x = F.relu(self.fc4(x))
@@ -384,13 +392,20 @@ class Network(nn.Module):
 
 
     def init_weights(self):
+        '''
+        Applying initialisation of layers
+        '''
         self.apply(Network._init_weights_orthonormal)
-
         return
 
 
     @staticmethod
     def _init_weights_orthonormal(m):
+        '''
+        Orthonormal Initialissation of layer
+
+        @param m: layer m
+        '''
         if isinstance(m, nn.Conv2d):
             #n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
             #m.weight.data.normal_(0, (2. / n) ** (1 / 2.0))
@@ -404,6 +419,18 @@ class Network(nn.Module):
 
 
     def size_feature_map(self, Wx, Hx, F, P, S, type_layer = 'conv'):
+        '''
+        Computing size of feature map after convolution or pooling
+
+        @param Wx: Width input
+        @param Hx: Height input
+        @param F: Filter size
+        @param P: Padding
+        @param S: Stride
+        @param type_layer: conv or pool
+        @return Wy: Width output
+        @return Hy: Height output
+        '''
 
         if self.config["fully_convolutional"] == "FCN":
             Pw = P[0]
@@ -424,6 +451,12 @@ class Network(nn.Module):
 
 
     def tcnn(self, x):
+        '''
+        tCNN network
+
+        @param x: input sequence
+        @return x: Prediction of the network
+        '''
         x = F.relu(self.conv1_1(x))
         x = F.relu(self.conv1_2(x))
         # x12 = F.max_pool2d(x12, (2, 1))
@@ -442,6 +475,19 @@ class Network(nn.Module):
 
 
     def tcnn_imu(self, x):
+        '''
+        tCNN-IMU network
+        The parameters will adapt according to the dataset, reshape and output type
+
+        x_LA, x_LL, x_N, x_RA, x_RL
+
+        @param x: input sequence
+        @return x_LA: Features from left arm
+        @return x_LL: Features from left leg
+        @return x_N: Features from Neck or Torso
+        @return x_RA: Features from Right Arm
+        @return x_RL: Features from Right Leg
+        '''
         # LA
         if self.config["reshape_input"]:
             if self.config["NB_sensor_channels"] == 27:
