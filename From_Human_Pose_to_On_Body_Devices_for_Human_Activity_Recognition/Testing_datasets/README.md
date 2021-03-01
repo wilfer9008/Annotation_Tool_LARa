@@ -5,8 +5,9 @@ Updating in progress..
 
 ## Dataset
 Pamap2 preprocessing found in CNN_IMU_rep/src/preprocessing_pamap2.py
- Dataset [1][2] can be downloaded from:
- http://archive.ics.uci.edu/ml/datasets/pamap2+physical+activity+monitoring
+
+Dataset [1][2] can be downloaded from:
+http://archive.ics.uci.edu/ml/datasets/pamap2+physical+activity+monitoring
 
 ## Usage
 
