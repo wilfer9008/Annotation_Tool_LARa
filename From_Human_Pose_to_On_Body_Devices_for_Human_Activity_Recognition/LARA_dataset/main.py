@@ -264,58 +264,58 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
 
     if output[output_idx] == 'softmax':
         labeltype = "class"
-        folder_base = "/data2/"
+        folder_base = "/path_where_results_will_be_stored_for_softmax/"
     elif output[output_idx] == 'attribute':
         labeltype = "attributes"
-        folder_base = "/data2/"
+        folder_base = "/path_where_results_will_be_stored_for_attributes/"
 
 
     # Folder
     if usage_modus[usage_modus_idx] == 'train':
-        folder_exp = folder_base + 'fmoya/HAR/pytorch/' + dataset[dataset_idx] + '/' + \
+        folder_exp = folder_base + dataset[dataset_idx] + '/' + \
                      network[network_idx] + '/' + output[output_idx] + '/' + fully_convolutional + '/' \
                      + reshape_folder + '/' + 'experiment/'
-        folder_exp_base_fine_tuning = folder_base + 'fmoya/HAR/pytorch/' + dataset[dataset_fine_tuning_idx] + '/' + \
+        folder_exp_base_fine_tuning = folder_base + dataset[dataset_fine_tuning_idx] + '/' + \
                                       network[network_idx] + '/' + output[output_idx] + '/' + fully_convolutional + \
                                       '/' + reshape_folder + '/' + 'final/'
     elif usage_modus[usage_modus_idx] == 'test':
-        folder_exp = folder_base + 'fmoya/HAR/pytorch/' + dataset[dataset_idx] + '/' + \
+        folder_exp = folder_base + dataset[dataset_idx] + '/' + \
                      network[network_idx] + '/' + output[output_idx] + '/' + fully_convolutional + \
                      '/' + reshape_folder + '/' + 'final/'
-        folder_exp_base_fine_tuning = folder_base + 'fmoya/HAR/pytorch/' + dataset[dataset_fine_tuning_idx] + '/' + \
+        folder_exp_base_fine_tuning = folder_base + dataset[dataset_fine_tuning_idx] + '/' + \
                                       network[network_idx] + '/' + output[output_idx] + '/' + fully_convolutional + \
                                       '/' + reshape_folder + '/' + 'final/'
     elif usage_modus[usage_modus_idx] == 'train_final':
-        folder_exp = folder_base + 'fmoya/HAR/pytorch/' + dataset[dataset_idx] + '/' + \
+        folder_exp = folder_base + dataset[dataset_idx] + '/' + \
                      network[network_idx] + '/' + output[output_idx] + '/' + fully_convolutional +\
                      '/' + reshape_folder + '/' + 'final/'
-        folder_exp_base_fine_tuning = folder_base + 'fmoya/HAR/pytorch/' + dataset[dataset_fine_tuning_idx] + '/' + \
+        folder_exp_base_fine_tuning = folder_base + dataset[dataset_fine_tuning_idx] + '/' + \
                                       network[network_idx] + '/' + output[output_idx] + '/' + fully_convolutional + \
                                       '/' + reshape_folder + '/' + 'final/'
     elif usage_modus[usage_modus_idx] == 'fine_tuning':
-        folder_exp = folder_base + 'fmoya/HAR/pytorch/' + dataset[dataset_idx] + '/' + \
+        folder_exp = folder_base + dataset[dataset_idx] + '/' + \
                      network[network_idx] + '/' + output[output_idx] + '/' + fully_convolutional + \
                      '/' + reshape_folder + '/' + 'fine_tuning/'
-        folder_exp_base_fine_tuning = folder_base + 'fmoya/HAR/pytorch/' + dataset[dataset_fine_tuning_idx] + '/' + \
+        folder_exp_base_fine_tuning = folder_base + dataset[dataset_fine_tuning_idx] + '/' + \
                                       network[network_idx] + '/' + output[output_idx] + '/' + fully_convolutional + \
                                       '/' + reshape_folder + '/' + 'final/'
     else:
         raise ("Error: Not selected fine tuning option")
 
     # Paths are given according to the ones created in *preprocessing.py for the datasets
-    dataset_root = {'mocap': folder_base + 'MoCap_dataset/',
-                    'mbientlab': folder_base + 'mbientlab/',
-                    'virtual': folder_base + 'Virtual_IMUs/',
-                    'mocap_half': folder_base + 'MoCap_dataset_half_freq/',
-                    'virtual_quarter': folder_base + 'Virtual_IMUs/',
-                    'mocap_quarter': folder_base + 'MoCap_dataset_half_freq/',
-                    'mbientlab_50_p': folder_base + 'mbientlab_50_persons/',
-                    'mbientlab_10_p': folder_base + 'mbientlab_10_persons/',
-                    'mbientlab_50_r': folder_base + 'mbientlab_50_recordings/',
-                    'mbientlab_10_r': folder_base + 'mbientlab_10_recordings/',
-                    'mbientlab_quarter': folder_base + 'mbientlab/',
-                    'motionminers_real': folder_base + 'motionminers_real/',
-                    'motionminers_flw': folder_base + 'motionminers_flw/'}
+    dataset_root = {'mocap': "path_to_datasets_folder/" + 'MoCap_dataset/',
+                    'mbientlab': "path_to_datasets_folder/" + 'mbientlab/',
+                    'virtual': "path_to_datasets_folder/" + 'Virtual_IMUs/',
+                    'mocap_half': "path_to_datasets_folder/" + 'MoCap_dataset_half_freq/',
+                    'virtual_quarter': "path_to_datasets_folder/" + 'Virtual_IMUs/',
+                    'mocap_quarter': "path_to_datasets_folder/" + 'MoCap_dataset_half_freq/',
+                    'mbientlab_50_p': "path_to_datasets_folder/" + 'mbientlab_50_persons/',
+                    'mbientlab_10_p': "path_to_datasets_folder/" + 'mbientlab_10_persons/',
+                    'mbientlab_50_r': "path_to_datasets_folder/" + 'mbientlab_50_recordings/',
+                    'mbientlab_10_r': "path_to_datasets_folder/" + 'mbientlab_10_recordings/',
+                    'mbientlab_quarter': "path_to_datasets_folder/" + 'mbientlab/',
+                    'motionminers_real': "path_to_datasets_folder/" + 'motionminers_real/',
+                    'motionminers_flw': "path_to_datasets_folder/" + 'motionminers_flw/'}
 
     # GPU
     os.environ["CUDA_VISIBLE_DEVICES"] = "3"
