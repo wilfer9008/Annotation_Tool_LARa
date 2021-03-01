@@ -324,7 +324,7 @@ def generate_derivatives(ids):
     '''
 
     FOLDER_PATH = '/path_to_theLARa_MOCAP_dataset/'
-    folder_derivative = "path_to_theLARa_MOCAP_dataset/"
+    folder_derivative = "path_to_theLARa_Virtual_dataset/"
 
     # Recording names, refer to the naming of the files in LARa dataset
     recordings = ['R{:02d}'.format(r) for r in range(1, 31)]
@@ -412,7 +412,6 @@ def compute_max_min(ids):
     '''
     Compute the max and min values for normalizing the data.
 
-
     print max and min.
     These values will be computed only once and the max min values
     will be place as constants
@@ -420,8 +419,9 @@ def compute_max_min(ids):
     @param ids: ids for train
     '''
 
-    FOLDER_PATH = '/vol/corpora/har/DFG_Project/2019/Virtual_IMUs/recordings_2019/14_Annotated_Dataset/'
+    FOLDER_PATH = "path_to_theLARa_Virtual_dataset/"
 
+    # Recording names, refer to the naming of the files in LARa dataset
     recordings = ['R{:02d}'.format(r) for r in range(1, 31)]
 
     max_values_total = np.zeros((126))
@@ -434,6 +434,10 @@ def compute_max_min(ids):
         if P in ids:
             accumulator_measurements = np.empty((0, 126))
             for r, R in enumerate(recordings):
+                # All of these if-cases are coming due to the naming of the recordings in the data.
+                # Not all the subjects have the same
+                # annotated recordings, nor annotators, nor annotations runs, nor scenarios.
+                # these will include all of the recordings for the subjects
                 if P in ["P01", "P02", "P03", "P04", "P05", "P06"]:
                     S = "S01"
                 else:
