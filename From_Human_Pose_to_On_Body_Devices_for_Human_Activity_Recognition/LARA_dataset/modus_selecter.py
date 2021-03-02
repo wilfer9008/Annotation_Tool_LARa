@@ -180,7 +180,6 @@ class Modus_Selecter(object):
         """
         Test method. Testing the network , saving the performances
 
-        @param itera: training iteration, as training is repeated X number of times
         @param testing: Enabling testing after training
         @return results_test: dict with the results of the testing
         @return confusion_matrix_test: confusion matrix of the text
