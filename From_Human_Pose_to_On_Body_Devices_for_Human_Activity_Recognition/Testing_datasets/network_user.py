@@ -32,9 +32,9 @@ from matplotlib.ticker import LinearLocator, FormatStrFormatter
 from matplotlib.collections import PolyCollection
 
 from network import Network
-from opportunity import Opportunity
-from pamap2 import Pamap2
-from orderpicking import OderPicking
+from opportunity_preprocessing import Opportunity
+from pamap2_preprocessing import Pamap2
+from orderpicking_preprocessing import OrderPicking
 
 
 
