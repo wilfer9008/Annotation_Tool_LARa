@@ -181,6 +181,9 @@ def opp_sliding_window(data_x, data_y, ws, ss, label_pos_end=True):
     @param ws: ids for train
     @param ss: ids for train
     @param label_pos_end: ids for train
+    @return data_x: Sequence train inputs [Batch,1, C, T]
+    @return data_y_labels: Activity classes [B, 1]
+    @return data_y_all: Activity classes for samples [Batch,1,T]
     '''
 
     print("Sliding window: Creating windows {} with step {}".format(ws, ss))
@@ -886,6 +889,15 @@ if __name__ == '__main__':
     # Creating dataset for LARA Mocap 200Hz or LARA Mocap 100Hz
     # Set the path to where the segmented windows will be located
     # This path will be needed for the main.py
+
+    # Dataset (extracted segmented windows) will be stored in a given folder by the user,
+    # However, inside the folder, there shall be the subfolders (sequences_train, sequences_val, sequences_test)
+    # These folders and subfolfders gotta be created manually by the user
+    # This as a sort of organisation for the dataset
+    # MoCap_dataset/sequences_train
+    # MoCap_dataset/sequences_val
+    # MoCap_dataset/sequences_test
+
     create_dataset(half=False)
 
     print("Done")
