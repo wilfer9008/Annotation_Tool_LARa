@@ -32,9 +32,9 @@ from matplotlib.ticker import LinearLocator, FormatStrFormatter
 from matplotlib.collections import PolyCollection
 
 from network import Network
-from opportunity import Opportunity
-from pamap2 import Pamap2
-from orderpicking import OderPicking
+from opportunity_preprocessing import Opportunity
+from pamap2_preprocessing import Pamap2
+from orderpicking_preprocessing import OrderPicking
 
 
 
@@ -84,6 +84,20 @@ class Network_User(object):
     ##################################################
 
     def load_dataset(self, filename):
+        '''
+        Load the dataset from a given path
+
+        X_train, y_train, X_val, y_val, X_test, y_test
+
+        @param filename: figure object
+        @return X_train: Sequence train inputs [Samples ,C]
+        @return y_train: Activity class for training
+        @return X_val: Sequence trains input [Samples, C]
+        @return y_val: Activity class for validation
+        @return X_test: Sequence trains input [Samples, C]
+        @return y_test: Activity class for testing
+        '''
+
         logging.info('        Network_User: Loading Dataset from file {}'.format(filename))
 
         try:
@@ -118,6 +132,21 @@ class Network_User(object):
     ##################################################
 
     def opp_sliding_window(self, data_x, data_y):
+        '''
+        Performs the sliding window approach on the data and the labels
+
+        return three arrays.
+        - data, an array where first dim is the windows
+        - labels per window according to end, middle or mode
+        - all labels per window
+
+        @param data_x: ids for train
+        @param data_y: ids for train
+        @return data_x: Sequence train inputs [windows, C, T]
+        @return data_y_labels: Activity classes [windows, 1]
+        @return data_y_all: Activity classes for samples [windows, 1, T]
+        '''
+
         ws = self.config['sliding_window_length']
         ss = self.config['sliding_window_step']
 
@@ -151,7 +180,13 @@ class Network_User(object):
     ##################################################
 
     def create_batches(self, data, batch_size=1):
+        '''
+        Create batches
 
+        @param data: data [windows, C, T]
+        @param batch_size: batch size
+        @return data_batches: Activity classes for samples [Batches, windows, C, T]
+        '''
         logging.info('        Network_User: Preparing data with batch size {}'.format(batch_size))
         data_batches = []
         batches = np.arange(0, data.shape[0], batch_size)
@@ -170,9 +205,19 @@ class Network_User(object):
 
     ##################################################    
     ################  random_data  ###################
-    ################################################## 
-
+    ##################################################
     def random_data(self, data, label, y_data=None):
+        '''
+        Randomise the data
+
+        @param data: data [windows, C, T]
+        @param label: label [windows, 1,]
+        @param y_data: labels [windows, 1, T]
+        @return data_s: data randomised [windows, C, T]
+        @return label_s: label randomised [windows, 1,]
+        @return y_data_s: labels randomised [windows, 1, T]
+        '''
+
         logging.info('        Network_User: Randomizing data')
 
         if data.shape[0] != label.shape[0]:
@@ -209,6 +254,20 @@ class Network_User(object):
     ##################################################    
 
     def prepare_data(self, values, labels, if_val=False, batch_size=1, y_data=None):
+        '''
+        Prepare dataset, randomising and creating batches
+
+        @param values: data [windows, C, T]
+        @param labels: label [windows, 1,]
+        @param if_val: labels [windows, 1, T]
+        @param data_s: data randomised [windows, C, T]
+        @param batch_size: label [windows, 1,]
+        @param y_data: labels [windows, 1, T]
+        @return v_b: data randomised [Batch, windows, C, T]
+        @return l_b: label randomised [Batch, windows, 1,]
+        @return y_data_b: labels randomised [BAtch, windows, 1, T]
+        '''
+
         logging.info('        Network_User: Preparing data')
 
         if if_val == False:
@@ -241,7 +300,12 @@ class Network_User(object):
     ##################################################
 
     def save_network(self, itera, name_net='best_network'):
+        '''
+        Saving network to file
 
+        @param itera: Training iteration
+        @param name_net: name network file
+        '''
         logging.info('        Network_User: Saving network---->')
         torch.save({'state_dict': self.network_obj.state_dict()}, self.config['folder_exp'] + name_net + '.pt')
 
@@ -252,7 +316,11 @@ class Network_User(object):
     ##################################################
 
     def set_attrs(self, attrs):
+        '''
+        Set current attributes for evolution iteration
 
+        @param attrs: Matrix with attribute representation
+        '''
         logging.info('        Network_User: Setting attributes---->')
         self.attrs = np.copy(attrs)
 
@@ -263,6 +331,20 @@ class Network_User(object):
     ##################################################
 
     def plot(self, fig, axis_list, plot_list, metrics_list, activaciones, tgt, pred):
+        '''
+        Plots the input, and feature maps through the network.
+        Deprecated for now.
+
+        returns a numpy array
+
+        @param fig: figure object
+        @param axis_list: list with all of the axis. Each axis will represent a feature map
+        @param plot_list: list of all of the plots of the feature maps
+        @param metrics_list: Matrix with results
+        @param activaciones: Feature maps of CNNs layers
+        @param tgt: Target class
+        @param pred: Predicted class
+        '''
 
         logging.info('        Network_User:    Plotting')
         if self.config['plotting']:
@@ -321,6 +403,13 @@ class Network_User(object):
     ##################################################
     
     def load_weights(self, network):
+        '''
+        Load weights from a trained network
+
+        @param network: target network with orthonormal initialisation
+        @return network: network with transferred CNN layers
+        '''
+
         model_dict = network.state_dict()
         # 1. filter out unnecessary keys
         logging.info('        Network_User:        Loading Weights')
@@ -368,6 +457,14 @@ class Network_User(object):
     ##################################################
 
     def set_required_grad(self, network):
+        '''
+        Setting the computing of the gradients for some layers as False
+        This will act as the freezing of layers
+
+        @param network: target network
+        @return network: network with frozen layers
+        '''
+
         model_dict = network.state_dict()
         # 1. filter out unnecessary keys
         logging.info('        Network_User:        Setting Required_grad to Weights')
@@ -401,8 +498,18 @@ class Network_User(object):
 
     #def train(self, X_train_in, y_train_in, X_val_in, y_val_in, statistics, ea_itera, y_data_in=None):
     def train(self, ea_itera):
+        '''
+        Training and validating a network
+
+        @param ea_itera: evolution iteration
+        @return acc_val: accuracy of last validation
+        @return f1_weighted_val: f1w of last validation
+        @return f1_mean_val: f1m of last validation
+        '''
+
         logging.info('        Network_User: Train---->')
 
+        # Setting the network
         logging.info('        Network_User:    Train:    creating network')
         if self.config['network'] == 'cnn' or self.config['network'] == 'cnn_imu':
             self.network_obj = Network(self.config)
@@ -428,7 +535,7 @@ class Network_User(object):
             logging.info('        Network_User:    Train:    setting criterion optimizer Attribute')
             criterion = nn.BCELoss()
 
-        # Setting optimizer
+        # Setting the freezing or not freezing from conv layers
         if self.config['freeze_options']:
             self.network_obj = self.set_required_grad(self.network_obj)
 
@@ -439,7 +546,8 @@ class Network_User(object):
         optimizer.zero_grad()
 
         if self.config['plotting']:
-            # Plots
+            # Plotting the input or feature maps through the network.
+            # For now deprecated, as features for all the layers arent stored.
 
             logging.info('        Network_User:    Train:    setting plotting objects')
 
@@ -504,15 +612,18 @@ class Network_User(object):
 
         best_acc_val = 0
 
+        # initialising object for computing metrics
         metrics_obj = Metrics(self.config, self.device, self.attrs)
 
-        # loop for training
         itera = 0
         start_time_train = time.time()
 
         # zero the parameter gradients
         optimizer.zero_grad()
 
+        # loop for training
+        # Validation is not carried out per epoch, but after certain number of iterations, specified
+        # in configuration in main
         for e in range(self.config['epochs']):
             start_time_train = time.time()
             logging.info('\n        Network_User:    Train:    Training epoch {}'.format(e))
@@ -544,16 +655,6 @@ class Network_User(object):
                     for lx in range(train_batch_l.shape[0]):
                         train_batch_l_matrix[lx, :] = self.attrs[train_batch_l[lx]]
 
-
-                # Creating torch tensors
-                #train_batch_v = torch.from_numpy(train_batch_v)
-                # if self.config['output'] == 'softmax':
-                    #train_batch_l = torch.from_numpy(train_batch_l)
-                #     train_batch_l = train_batch_l.type(dtype=torch.LongTensor)  #labels for crossentropy needs long type
-                # elif self.config['output'] == 'attribute':
-                #    train_batch_l = torch.from_numpy(train_batch_l_matrix)
-                #    train_batch_l = train_batch_l.type(dtype=torch.FloatTensor)  #labels for crossentropy needs long type
-
                 # Adding gaussian noise
                 noise = self.normal.sample((train_batch_v.size()))
                 noise = noise.reshape(train_batch_v.size())
@@ -562,10 +663,12 @@ class Network_User(object):
                 # Sending to GPU
                 train_batch_v = train_batch_v.to(self.device, dtype=torch.float)
                 train_batch_v += noise
-                if self.config['output'] == 'softmax': 
-                    train_batch_l = train_batch_l.to(self.device, dtype=torch.long) #labels for crossentropy needs long type
-                elif self.config['output'] == 'attribute':  
-                    train_batch_l = train_batch_l.to(self.device, dtype=torch.float) #labels for binerycrossentropy needs float type
+                if self.config['output'] == 'softmax':
+                    # labels for crossentropy needs long type
+                    train_batch_l = train_batch_l.to(self.device, dtype=torch.long)
+                elif self.config['output'] == 'attribute':
+                    # labels for binerycrossentropy needs float type
+                    train_batch_l = train_batch_l.to(self.device, dtype=torch.float)
 
                 # forward + backward + optimize
                 if self.config['output'] == 'softmax':
@@ -600,7 +703,7 @@ class Network_User(object):
                     # Setting the network to eval mode
                     self.network_obj.eval()
 
-                    # Metrics for training
+                    # Metrics for training for keeping the same number of metrics for val and training
                     acc, f1_weighted, f1_mean = metrics_obj.metric(targets=train_batch_l, predictions=feature_maps)
                     loss_train_val.append(loss_train)
                     accs_train_val.append(acc)
@@ -608,10 +711,12 @@ class Network_User(object):
                     f1m_train_val.append(f1_mean)
 
                     # Validation
+                    # Calling the val() function with the current network and criterion
                     acc_val, f1_weighted_val, f1_mean_val, loss_val = self.validate(self.network_obj, criterion)
 
                     elapsed_time_val = time.time() - start_time_val
 
+                    # Appending the val metrics
                     losses_val.append(loss_val)
                     accs_val.append(acc_val)
                     f1w_val.append(f1_weighted_val)
@@ -625,8 +730,8 @@ class Network_User(object):
                     logging.info(
                         '        Network_User:        Validating:    '
                         'acc {}, f1_weighted {}, f1_mean {}'.format(acc_val, f1_weighted_val, f1_mean_val))
-                    # Saving the network
 
+                    # Saving the network for the best iteration accuracy
                     if acc_val > best_acc_val:
                         logging.info('        Network_User:            Saving the network')
 
@@ -634,7 +739,7 @@ class Network_User(object):
                                    self.config['folder_exp'] + 'network.pt')
                         best_acc_val = acc_val
 
-                # Plotting
+                # Computing metrics for current training batch
                 if (itera) % self.config['train_show'] == 0:
                     # Metrics for training
                     acc, f1_weighted, f1_mean = metrics_obj.metric(targets=train_batch_l, predictions=feature_maps)
@@ -646,8 +751,8 @@ class Network_User(object):
                     f1m_train.append(f1_mean)
                     losses_train.append(loss_train)
 
+                    # Plotting for now deprecated
                     if self.config['plotting']:
-                        #For plotting
                         metrics_list.append(accs_train)
                         metrics_list.append(f1w_train)
                         metrics_list.append(f1m_train)
@@ -702,6 +807,7 @@ class Network_User(object):
             '        Network_User:    Train:    epoch {} batch {} itera {} '
             'Total training time {}'.format(e, b, itera, elapsed_time_train))
 
+        # Storing the acc, f1s and losses of training and validation for the current training run
         np.savetxt(self.config['folder_exp'] + 'plots/acc_train.txt', accs_train_val, delimiter=",", fmt='%s')
         np.savetxt(self.config['folder_exp'] + 'plots/f1m_train.txt', f1m_train_val, delimiter=",", fmt='%s')
         np.savetxt(self.config['folder_exp'] + 'plots/f1w_train.txt', f1w_train_val, delimiter=",", fmt='%s')
@@ -734,10 +840,20 @@ class Network_User(object):
     ##################################################  
 
     def validate(self, network_obj, criterion):
+        '''
+        Validating a network
+
+        @param network_obj: network object
+        @param criterion: torch criterion object
+        @return acc_val: accuracy of validation
+        @return f1_weighted_val: f1w of validation
+        @return f1_mean_val: f1m of validation
+        '''
 
         # Setting the network to eval mode
         network_obj.eval()
 
+        # Creating metric object
         metrics_obj = Metrics(self.config, self.device, self.attrs)
         loss_val = 0
 
@@ -772,6 +888,7 @@ class Network_User(object):
                 loss = criterion(predictions, test_batch_l)
                 loss_val = loss_val + loss.item()
 
+                # Concatenating all of the batches for computing the metrics
                 # As creating an empty tensor and sending to device and then concatenating isnt working
                 if v == 0:
                     predictions_val = predictions
@@ -799,9 +916,20 @@ class Network_User(object):
     ##################################################
 
     def test(self, ea_itera):
+        '''
+        Testing a network
+
+        @param ea_itera: evolution iteration
+        @param criterion: torch criterion object
+        @return acc_test: accuracy of testing
+        @return f1_weighted_test: f1w of testing
+        @return f1_mean_test: f1m of testing
+        '''
 
         logging.info('        Network_User:    Test ---->')
 
+        # Creating a network and loading the weights for testing
+        # network is loaded from saved file in the folder of experiment
         logging.info('        Network_User:    Test:    creating network')
         if self.config['network'] == 'cnn' or self.config['network'] == 'cnn_imu':
             network_obj = Network(self.config)
@@ -813,7 +941,7 @@ class Network_User(object):
             logging.info('        Network_User:    Test:    setting device')
             network_obj.to(self.device)
 
-            # Setting loss
+            # Setting loss, only for being measured. Network wont be trained
             if self.config['output'] == 'softmax':
                 logging.info('        Network_User:    Train:    setting criterion optimizer Softmax')
                 criterion = nn.CrossEntropyLoss()
@@ -826,6 +954,7 @@ class Network_User(object):
         logging.info('        Network_User:    Testing')
         start_time_test = time.time()
 
+        # Creating metric object
         metrics_obj = Metrics(self.config, self.device, self.attrs)
 
         # loop for testing
@@ -857,6 +986,8 @@ class Network_User(object):
                 loss = criterion(predictions, test_batch_l)
                 loss_test = loss_test + loss.item()
 
+                # Concatenating all of the batches for computing the metrics for the entire testing set
+                # and not only for a batch
                 # As creating an empty tensor and sending to device and then concatenating isnt working
                 if v == 0:
                     predictions_test = predictions
@@ -868,16 +999,9 @@ class Network_User(object):
                 sys.stdout.write("\rTesting: Batch  {}/{}".format(v, len(self.dataLoader_test)))
                 sys.stdout.flush()
 
-                #if (v + 1) % 100 == 0:
-                #    logging.info('        Network_User:    Test:    '
-                #                 'iteration {} from {} Memory '
-                #                 'in GPU {} is {}'.format(v, len(self.dataLoader_test),
-                #                                          self.config['GPU'],
-                #                                          torch.cuda.memory_allocated(device=self.config['GPU'])))
-
         elapsed_time_test = time.time() - start_time_test
 
-        # Computing metrics
+        #Computing metrics for the entire testing set
         acc_test, f1_weighted_test, f1_mean_test = metrics_obj.metric(test_labels, predictions_test)
 
         # print statistics
@@ -921,7 +1045,16 @@ class Network_User(object):
     ############  evolution_evaluation  ##############
     ##################################################
     
-    def evolution_evaluation(self, ea_iter, testing = False):
+    def evolution_evaluation(self, ea_iter, testing=False):
+        '''
+        Organises the evolution, training, testing or validating
+
+        @param ea_itera: evolution iteration
+        @param testing: Setting testing in training or only testing
+        @return acc_test: accuracy of testing
+        @return f1_weighted_test: f1w of testing
+        @return f1_mean_test: f1m of testing
+        '''
         
         logging.info('        Network_User: Evolution evaluation iter {}'.format(ea_iter))
 

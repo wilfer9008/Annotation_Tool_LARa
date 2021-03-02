@@ -1,7 +1,10 @@
 # Logistic Activity Recognition Challenge (LARa) 
 Implementation code for the Annotation Tool that is used for LARa dataset, presented in the Journal "LARa: Creating a Dataset for Human Activity Recognition in Logistics Using Semantic Attributes", see https://www.mdpi.com/1424-8220/20/15/4083
 
-# And ICPR20:From Human Pose to On Body Devices for Human Activity Recognition
+And
+
+
+# ICPR20:From Human Pose to On Body Devices for Human Activity Recognition
 Implementation code for "From Human Pose to On Body Devices for Human Activity Recognition.
 
 Updating in progress.
