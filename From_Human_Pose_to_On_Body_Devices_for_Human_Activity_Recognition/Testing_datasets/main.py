@@ -202,7 +202,6 @@ def configuration(dataset_idx, network_idx, output_idx, usage_modus_idx=0, datas
 
     now = datetime.datetime.now()
 
-
     configuration = {'dataset': dataset[dataset_idx],
                      'dataset_finetuning': dataset[dataset_fine_tuning_idx],
                      'network': network[network_idx],
