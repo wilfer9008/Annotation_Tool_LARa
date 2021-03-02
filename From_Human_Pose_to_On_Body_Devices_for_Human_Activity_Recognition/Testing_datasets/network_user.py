@@ -84,6 +84,20 @@ class Network_User(object):
     ##################################################
 
     def load_dataset(self, filename):
+        '''
+        Load the dataset from a given path
+
+        X_train, y_train, X_val, y_val, X_test, y_test
+
+        @param filename: figure object
+        @return X_train: Sequence train inputs [Samples ,C]
+        @return y_train: Activity class for training
+        @return X_val: Sequence trains input [Samples, C]
+        @return y_val: Activity class for validation
+        @return X_test: Sequence trains input [Samples, C]
+        @return y_test: Activity class for testing
+        '''
+
         logging.info('        Network_User: Loading Dataset from file {}'.format(filename))
 
         try:
@@ -118,6 +132,21 @@ class Network_User(object):
     ##################################################
 
     def opp_sliding_window(self, data_x, data_y):
+        '''
+        Performs the sliding window approach on the data and the labels
+
+        return three arrays.
+        - data, an array where first dim is the windows
+        - labels per window according to end, middle or mode
+        - all labels per window
+
+        @param data_x: ids for train
+        @param data_y: ids for train
+        @return data_x: Sequence train inputs [windows, C, T]
+        @return data_y_labels: Activity classes [windows, 1]
+        @return data_y_all: Activity classes for samples [windows, 1, T]
+        '''
+
         ws = self.config['sliding_window_length']
         ss = self.config['sliding_window_step']
 
@@ -151,7 +180,13 @@ class Network_User(object):
     ##################################################
 
     def create_batches(self, data, batch_size=1):
+        '''
+        Create batches
 
+        @param data: data [windows, C, T]
+        @param batch_size: batch size
+        @return data_batches: Activity classes for samples [Batches, windows, C, T]
+        '''
         logging.info('        Network_User: Preparing data with batch size {}'.format(batch_size))
         data_batches = []
         batches = np.arange(0, data.shape[0], batch_size)
@@ -170,9 +205,19 @@ class Network_User(object):
 
     ##################################################    
     ################  random_data  ###################
-    ################################################## 
-
+    ##################################################
     def random_data(self, data, label, y_data=None):
+        '''
+        Randomise the data
+
+        @param data: data [windows, C, T]
+        @param label: label [windows, 1,]
+        @param y_data: labels [windows, 1, T]
+        @return data_s: data randomised [windows, C, T]
+        @return label_s: label randomised [windows, 1,]
+        @return y_data_s: labels randomised [windows, 1, T]
+        '''
+
         logging.info('        Network_User: Randomizing data')
 
         if data.shape[0] != label.shape[0]:
@@ -209,6 +254,20 @@ class Network_User(object):
     ##################################################    
 
     def prepare_data(self, values, labels, if_val=False, batch_size=1, y_data=None):
+        '''
+        Prepare dataset, randomising and creating batches
+
+        @param values: data [windows, C, T]
+        @param labels: label [windows, 1,]
+        @param if_val: labels [windows, 1, T]
+        @param data_s: data randomised [windows, C, T]
+        @param batch_size: label [windows, 1,]
+        @param y_data: labels [windows, 1, T]
+        @return v_b: data randomised [Batch, windows, C, T]
+        @return l_b: label randomised [Batch, windows, 1,]
+        @return y_data_b: labels randomised [BAtch, windows, 1, T]
+        '''
+
         logging.info('        Network_User: Preparing data')
 
         if if_val == False:
@@ -241,7 +300,12 @@ class Network_User(object):
     ##################################################
 
     def save_network(self, itera, name_net='best_network'):
+        '''
+        Saving network to file
 
+        @param itera: Training iteration
+        @param name_net: name network file
+        '''
         logging.info('        Network_User: Saving network---->')
         torch.save({'state_dict': self.network_obj.state_dict()}, self.config['folder_exp'] + name_net + '.pt')
 
@@ -252,7 +316,11 @@ class Network_User(object):
     ##################################################
 
     def set_attrs(self, attrs):
+        '''
+        Set current attributes for evolution iteration
 
+        @param attrs: Matrix with attribute representation
+        '''
         logging.info('        Network_User: Setting attributes---->')
         self.attrs = np.copy(attrs)
 
