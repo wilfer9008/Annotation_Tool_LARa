@@ -571,8 +571,6 @@ def compute_statistics_samples(ids, boolean_classes=True, attr=0):
     return
 
 
-
-
 ################
 # Generate data
 #################
@@ -581,7 +579,7 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir = No
     '''
     creates files for each of the sequences, which are extracted from a file
     following a sliding window approach
-    
+
     returns a numpy array
     
     @param ids: ids for train, val or test
