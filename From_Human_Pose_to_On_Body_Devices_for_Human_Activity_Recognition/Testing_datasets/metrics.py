@@ -29,6 +29,15 @@ class Metrics(object):
     ###########  Precision and Recall ################
     ##################################################
     def get_precision_recall(self, targets, predictions):
+        '''
+        Compute the precision and recall for all the activity classes
+
+        @param targets: torch array with targets
+        @param predictions: torch array with predictions
+        @return precision: torch array with precision of each class
+        @return recall: torch array with recall of each class
+        '''
+
         precision = torch.zeros((self.config['num_classes']))
         recall = torch.zeros((self.config['num_classes']))
 
@@ -67,7 +76,16 @@ class Metrics(object):
     ##################################################
 
     def f1_metric(self, targets, preds):
-        # Accuracy
+        '''
+        Compute the f1 metrics
+
+        @param targets: torch array with targets
+        @param predictions: torch array with predictions
+        @return F1_weighted: F1 weighted
+        @return F1_mean: F1 mean
+        '''
+
+        # Predictions
         if self.config['output'] == 'softmax':
             predictions = torch.argmax(preds, dim=1)
         elif self.config['output'] == 'attribute':
@@ -115,6 +133,13 @@ class Metrics(object):
     ##################################################
 
     def acc_metric(self, targets, predictions):
+        '''
+        Compute the Accuracy
+
+        @param targets: torch array with targets
+        @param predictions: torch array with predictions
+        @return acc: Accuracy
+        '''
 
         # Accuracy
         if self.config['output'] == 'softmax':
@@ -130,6 +155,15 @@ class Metrics(object):
     ##################################################
 
     def metric_attr(self, targets, predictions):
+        '''
+        Compute the Accuracy per attribute or attribute vector
+
+        @param targets: torch array with targets
+        @param predictions: torch array with predictions
+        @return acc_vc: Accuracy per attribute vector
+        @return acc_atr: Accuracy per attribute
+        '''
+
         # logging.info('        Network_User:    Metrics')
 
         # Accuracy per vector
@@ -146,6 +180,13 @@ class Metrics(object):
     ###################  metric  ######################
     ##################################################
     def efficient_distance(self, predictions):
+        '''
+        Compute Euclidean distance from predictions (output of sigmoid) to attribute representation
+
+        @param predictions: torch array with predictions (output from sigmoid)
+        @return distances: Euclidean Distance to each of the vectors in the attribute representation
+        '''
+
         euclidean = torch.nn.PairwiseDistance()
 
         predictions = predictions.repeat(self.attr.shape[0], 1, 1)
@@ -167,6 +208,15 @@ class Metrics(object):
     ##################################################
 
     def metric(self, targets, predictions):
+        '''
+        Compute the Accuracy per attribute or attribute vector
+
+        @param targets: torch array with targets
+        @param predictions: torch array with predictions
+        @return acc_vc: Accuracy per attribute vector
+        @return acc_atr: Accuracy per attribute
+        '''
+        
         # logging.info('        Network_User:    Metrics')
 
         if self.config['output'] == 'attribute':
