@@ -6,14 +6,12 @@ Updating in progress..
 ## Dataset
 
 ### Pamap2 
-preprocessing found in CNN_IMU_rep/src/pamap2_preprocessing.py
 
 Dataset [1][2] can be downloaded from:
 http://archive.ics.uci.edu/ml/datasets/pamap2+physical+activity+monitoring
 
 
 ### Opportunity 
-preprocessing found in CNN_IMU_rep/src/opportunity_preprocessing.py
 
 Dataset [3] can be downloaded from:
 https://archive.ics.uci.edu/ml/datasets/opportunity+activity+recognition
