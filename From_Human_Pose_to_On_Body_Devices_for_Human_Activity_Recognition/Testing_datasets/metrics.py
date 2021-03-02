@@ -216,7 +216,7 @@ class Metrics(object):
         @return acc_vc: Accuracy per attribute vector
         @return acc_atr: Accuracy per attribute
         '''
-        
+
         # logging.info('        Network_User:    Metrics')
 
         if self.config['output'] == 'attribute':
