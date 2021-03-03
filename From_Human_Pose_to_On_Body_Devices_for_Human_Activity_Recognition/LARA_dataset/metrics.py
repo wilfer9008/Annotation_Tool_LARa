@@ -203,7 +203,7 @@ class Metrics(object):
 
         logging.info('            Metric:    Acc attr: \n{}'.format(acc_attrs))
 
-        precision_attr, recall_attr = self.get_precision_recall_attrs(targets, torch.round(predictions))
+        precision_attr, recall_attr = self.get_precision_recall(targets, torch.round(predictions))
         logging.info('            Metric:    Precision attr: \n{}'.format(precision_attr))
         logging.info('            Metric:    Recall attr: \n{}'.format(recall_attr))
         return
