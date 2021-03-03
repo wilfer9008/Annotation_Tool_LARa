@@ -79,6 +79,54 @@ class Metrics(object):
 
         return precision, recall
 
+
+    #############################################################
+    ###########  Precision and Recall Attributes ################
+    #############################################################
+
+    def get_precision_recall_attrs(self, targets, predictions):
+        '''
+        Compute the precision and recall for all the attributes
+
+        @param targets: torch array with targets
+        @param predictions: torch array with predictions
+        @return precision: torch array with precision of each class
+        @return recall: torch array with recall of each class
+        '''
+
+        precision = torch.zeros((self.config['num_attributes']))
+        recall = torch.zeros((self.config['num_attributes']))
+
+        x = torch.ones(predictions.size()[0])
+        y = torch.zeros(predictions.size()[0])
+
+        x = x.to(self.device, dtype=torch.long)
+        y = y.to(self.device, dtype=torch.long)
+
+        for c in range(self.config['num_attributes']):
+            selected_elements = torch.where(predictions[:, c] == 1.0, x, y)
+            non_selected_elements = torch.where(predictions[:, c] == 1.0, y, x)
+
+            target_elements = torch.where(targets[:, c] == 1.0, x, y)
+            non_target_elements = torch.where(targets[:, c] == 1.0, y, x)
+
+            true_positives = torch.sum(target_elements * selected_elements)
+            false_positives = torch.sum(non_target_elements * selected_elements)
+
+            false_negatives = torch.sum(target_elements * non_selected_elements)
+
+            try:
+                precision[c] = true_positives.item() / float((true_positives + false_positives).item())
+                recall[c] = true_positives.item() / float((true_positives + false_negatives).item())
+
+            except:
+                # logging.error('        Network_User:    Train:    In Class {} true_positives {} false_positives {} false_negatives {}'.format(c, true_positives.item(),
+                #                                                                                                                              false_positives.item(),
+                #                                                                                                                              false_negatives.item()))
+                continue
+
+        return precision, recall
+
     ##################################################
     #################  F1 metric  ####################
     ##################################################
