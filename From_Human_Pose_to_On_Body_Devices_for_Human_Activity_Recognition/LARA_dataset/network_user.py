@@ -471,7 +471,6 @@ class Network_User(object):
                         or self.config["dataset"] == "mbientlab_quarter":
                     idx_frequency = np.arange(0, 100, 4)
                     train_batch_v = train_batch_v[:, :, idx_frequency, :]
-                    #logging.info('\n        Network_User:    Train:    new size {}'.format(train_batch_v.size()))
                 feature_maps = network_obj(train_batch_v)
                 if self.config["fully_convolutional"] == "FCN":
                     feature_maps = feature_maps.reshape(-1, feature_maps.size()[2])
@@ -694,7 +693,6 @@ class Network_User(object):
                         test_batch_l = harwindow_batched_val["labels"][:, 0]
                         test_batch_l = test_batch_l.reshape(-1)
                     elif self.config["fully_convolutional"] == "FC":
-                        #train_batch_l = harwindow_batched["label"][:, 1:]
                         test_batch_l = harwindow_batched_val["label"]
 
                 # Creating torch tensors
@@ -713,7 +711,6 @@ class Network_User(object):
                         self.config["dataset"] == "mbientlab_quarter":
                     idx_frequency = np.arange(0, 100, 4)
                     test_batch_v = test_batch_v[:, :, idx_frequency, :]
-                    # logging.info('\n        Network_User:    Validation:    new size {}'.format(test_batch_v.size()))
                 predictions = network_obj(test_batch_v)
                 if self.config['output'] == 'softmax':
                     loss = criterion(predictions, test_batch_l)
@@ -730,7 +727,6 @@ class Network_User(object):
                         test_labels = test_labels.reshape(-1)
                     elif self.config['output'] == 'attribute':
                         test_labels = harwindow_batched_val["label"]
-                        test_labels = test_labels.reshape(-1)
                 else:
                     predictions_val = torch.cat((predictions_val, predictions), dim=0)
                     if self.config['output'] == 'softmax':
@@ -811,7 +807,7 @@ class Network_User(object):
         # loop for testing
         with torch.no_grad():
             for v, harwindow_batched_test in enumerate(dataLoader_test):
-                # Selecting batch
+                #Selecting batch
                 test_batch_v = harwindow_batched_test["data"]
                 if self.config['output'] == 'softmax':
                     if self.config["fully_convolutional"] == "FCN":
@@ -835,7 +831,7 @@ class Network_User(object):
                     # labels for binerycrossentropy needs float type
                     test_batch_l = test_batch_l.to(self.device, dtype=torch.float)
 
-                # Forward pass
+                #forward
                 if self.config["dataset"] == "virtual_quarter" or self.config["dataset"] == "mocap_quarter" or \
                         self.config["dataset"] == "mbientlab_quarter":
                     idx_frequency = np.arange(0, 100, 4)
@@ -845,6 +841,7 @@ class Network_User(object):
                     loss = criterion(predictions, test_batch_l)
                 elif self.config['output'] == 'attribute':
                     loss = criterion(predictions, test_batch_l[:, 1:])
+                loss_test = loss_test + loss.item()
 
                 # Summing the loss
                 loss_test = loss_test + loss.item()
