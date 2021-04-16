@@ -397,8 +397,8 @@ if __name__ == '__main__':
         d_classes, d_distances = load_windows(paths)
     
     #dlg = make_histogramms_2(real_classes, b_classes, c_classes, c_distances, "B vs C")
-    dlg = make_histogramms_2(real_classes, b_classes, d_classes, d_distances, "Method B vs NN<sub>d</sub>")
-    dlg = make_histogramms_2(real_classes, c_classes, d_classes, d_distances, "Method C vs NN<sub>d</sub>")
+    dlg = make_histogramms_2(real_classes, b_classes, d_classes, d_distances, "Baseline vs Boosting</sub>")
+    dlg = make_histogramms_2(real_classes, c_classes, d_classes, d_distances, "Retrained vs Boosting</sub>")
     #dlg = make_histogramms_2(real_classes, d_classes, c_classes, c_distances, "D vs C")
     
     
