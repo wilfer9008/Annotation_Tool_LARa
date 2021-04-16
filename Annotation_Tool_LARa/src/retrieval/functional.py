@@ -1,34 +1,25 @@
-import math
 import os
 
+from PyQt5 import QtWidgets
 import dill
 import numpy as np
 import torch
-from PyQt5 import QtWidgets
 from sklearn.metrics.pairwise import cosine_similarity
 
+from network import Network
+from dialogs import PlotDialog
 import global_variables as g
 from data_management import SlidingWindowDataset, DeepRepresentationDataset
-from dialogs import PlotDialog
-from network import Network
-from controllers.controller import Graph
 
 
 class DenseSlidingWindowDataset(SlidingWindowDataset):
     def __init__(self, data: np.array, window_length: int):
         super(DenseSlidingWindowDataset, self).__init__(data, window_length, window_step=100)
-        length = super(DenseSlidingWindowDataset, self).__len__()
 
-        self.classes = np.zeros((length, len(g.classes)), dtype=float) - 1
-        self.attributes = np.zeros((length, len(g.attributes)), dtype=float) - 1
-
-        self.attribute_queries = None
+        self.classes = np.zeros((len(self), len(g.classes)), dtype=float) - 1
+        self.attributes = np.zeros((len(self), len(g.attributes)), dtype=float) - 1
 
         self.ground_truth = self.make_ground_truth()
-        self.attr_ground_truth = self.make_attr_ground_truth()
-
-    def __len__(self):
-        return self.classes.shape[0]
 
     def save_labels(self, index, label, label_kind):
         if label_kind == 'attributes':
@@ -36,15 +27,15 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
         else:
             raise ValueError
 
-    def make_ground_truth(self) -> np.array:
-        ground_truth = np.zeros((len(self),), dtype=int) - 1
+    def make_ground_truth(self):
+        ground_truth = np.zeros((self.__len__(),), dtype=int) - 1
 
         # labels = expand window classes to array
         labels = np.array([])
         for start, end, class_, _ in g.windows.windows:
             labels = np.hstack((labels, np.repeat(class_, end - start)))
 
-        # print("ground truth labels shape", labels.shape)
+        print(labels.shape)
         # use mode to assign ground truth for each segment
         for i in range(len(self)):
             lower, upper = self.__range__(i)
@@ -54,211 +45,52 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
 
         return ground_truth
 
-    def make_attr_ground_truth(self) -> np.array:
-        ground_truth = np.zeros((len(self), len(g.attributes)), dtype=int) - 1
+    def make_heatmap(self, class_index):
+        return self.classes[:, class_index]
 
-        # labels = expand window classes to array
-        labels = None
-        for start, end, _, attr in g.windows.windows:
-            if labels is None:
-                labels = np.tile(attr, (end - start, 1))
-                # print(labels.shape)
-            else:
-                labels = np.vstack((labels, np.tile(attr, (end - start, 1))))
+    def predict_classes_from_attributes(self, att_rep):
+        attributes = np.array(att_rep[:, 1:])
+        # attributes = attributes/np.linalg.norm(attributes,axis=1,keepdims=True)
+        # distances = distance_matrix(self.attributes,attributes)
+        distances = 1 - cosine_similarity(self.attributes, attributes)
 
-        # print("attr ground thruth labels shape", labels.shape)
-        # use mode to assign ground truth for each segment
-        for i in range(len(self)):
-            lower, upper = self.__range__(i)
-            values, counts = np.unique(labels[lower:upper], return_counts=True, axis=0)
-            order = np.argsort(counts)
-            ground_truth[i] = values[order[-1]]
-
-            # print("values", values)
-            # print("counts", counts)
-            # print("order", order)
-            # print("ground_truth[i]", ground_truth[i], "\n")
-
-        return ground_truth
-
-    def make_heatmap(self, class_index, normalize=False):
-        if not normalize:
-            return self.classes[:, class_index]
-        heatmap = self.classes[:, class_index]
-        min_ = min(heatmap)
-        max_ = max(heatmap)
-        heatmap = (heatmap - min_) / (max_ - min_)
-        return heatmap
-
-    def make_attr_heatmap(self, attr_index, normalize=False):
-        if not normalize:
-            return self.attribute_queries[:, attr_index]
-        heatmap = self.attribute_queries[:, attr_index]
-        min_ = min(heatmap)
-        max_ = max(heatmap)
-        heatmap = (heatmap - min_) / (max_ - min_)
-        return heatmap
-
-    def predict_classes_from_attributes(self, distance="cosine"):
-        attribute_rep = g.attribute_rep[:, 1:]
-
-        distances = None
-
-        if distance == "cosine":
-            distances = cosine_similarity(self.attributes, attribute_rep)
-        elif distance == "bce":
-            attributes = torch.from_numpy(self.attributes)
-            attribute_rep = torch.from_numpy(attribute_rep)
-            bceloss = torch.nn.BCELoss()
-            distances = np.ones((attributes.shape[0], attribute_rep.shape[0]))
-            for i in range(attributes.shape[0]):
-                for j in range(attribute_rep.shape[0]):
-                    distances[i, j] -= bceloss(attributes[i], attribute_rep[j]).item()/100
-        else:
-            ValueError(f"Supported distances are 'cosine' and 'bce'. But '{distance}' was given.")
-
-        sorted_distances_indexes = np.argsort(1 - distances, 1)
+        sorted_distances_indexes = np.argsort(distances, 1)
+        # print("distances shape ", distances.shape)
+        # print("sorted distances shape", sorted_distances.shape)
+        # self.top3_distances = np.zeros((g.data.number_samples, 3))
 
         for i in range(len(self)):
-            # print(f"Evaluation: {i + 1}/{len(self)}")
+            print(f"Evaluation: {i+1}/{len(self)}")
+            # self.top3_distances[i] = distances[i, sorted_distances[i, :3]]
 
-            sorted_classes = g.attribute_rep[sorted_distances_indexes[i], 0]
+            sorted_classes = att_rep[sorted_distances_indexes[i], 0]
             sorted_distances = distances[i, sorted_distances_indexes[i, :]]
+            #print("sorted_classes.len", len(sorted_classes))
+            #print("sorted_distances.len", len(sorted_distances))
+            #print(sorted_classes[:90])
+            #print(sorted_distances[:90])
 
             # First occurrence (index) of each class. np.unique is sorted by class not by index.
             indexes = np.unique(sorted_classes, return_index=True)[1]
-            # Get the distance
-            self.classes[i] = np.array(sorted_distances[indexes])
+            #print(indexes)
 
-    def predict_attributes(self, distance="cosine"):
-        attribute_rep = g.attribute_rep[:, 1:]
+            # The classes were already sorted by distance.
+            # Sorting the indexes again will restore that order
+            sorted_classes = [sorted_classes[index] for index in sorted(indexes)]
+            sorted_distances = [sorted_distances[index] for index in sorted(indexes)]
 
-        # TODO replace cosine with bce
-        if distance == "cosine":
-            self.attribute_queries = cosine_similarity(self.attributes, attribute_rep)
+            #print(sorted_classes)
+            #print(sorted_distances)
 
-        elif distance == "bce":
-            attributes = torch.from_numpy(self.attributes)
-            attribute_rep = torch.from_numpy(attribute_rep)
-            bceloss = torch.nn.BCELoss()
-            self.attribute_queries = np.zeros((attributes.shape[0], attribute_rep.shape[0]))
-            for i in range(attributes.shape[0]):
-                for j in range(attribute_rep.shape[0]):
-                    self.attribute_queries[i, j] = bceloss(attributes[i], attribute_rep[j]).item()/100
-            self.attribute_queries = 1 - self.attribute_queries
-        else:
-            ValueError(f"Supported distances are 'cosine' and 'bce'. But '{distance}' was given.")
-
-    def retrieve_list(self, class_index, length=None):
-        retrieval_list = []
-        heatmap = self.make_heatmap(class_index, False)
-
-        indexes = np.argsort(1 - heatmap)  # 1- Because np.argsort sorts in ascending order
-        if length is not None and length < len(indexes):
-            indexes = indexes[:length]
-        for i in indexes:
-            retrieval_list.append({"range": self.__range__(i), "index": i, "value": heatmap[i]})
-        return retrieval_list
-
-    def retrieve_attr_list(self, attr_index, length=None):
-        retrieval_list = []
-        heatmap = self.make_attr_heatmap(attr_index, False)
-
-        indexes = np.argsort(1 - heatmap)  # 1- Because np.argsort sorts in ascending order
-        if length is not None and length < len(indexes):
-            indexes = indexes[:length]
-        for i in indexes:
-            retrieval_list.append({"range": self.__range__(i), "index": i, "value": heatmap[i]})
-        return retrieval_list
-
-    def mean_average_precision(self, classes=True):
-        avep_sum = 0
-        nan_results = 0
-        if classes:
-            for i in range(len(g.classes)):
-                avep = self.average_precision(class_index=i)
-                if not math.isnan(avep):
-                    avep_sum += avep
-                else:
-                    nan_results += 1
-                    #print(f"Warning! Class {g.classes[i]} was not included in Mean Average Precision")
-            return avep_sum / (len(g.classes) - nan_results)
-        else:
-            for i in range(g.attribute_rep.shape[0]):
-                avep = self.average_precision(attr_index=i)
-                if not math.isnan(avep):
-                    avep_sum += avep
-                else:
-                    nan_results += 1
-                    #print(f"Warning! Attribute Vector {i} was not included in Mean Average Precision")
-            return avep_sum / (g.attribute_rep.shape[0] - nan_results)
-
-    def average_precision(self, class_index=None, attr_index=None):
-        if class_index is None and attr_index is None:
-            raise ValueError
-        elif class_index is not None and attr_index is not None:
-            raise ValueError
-        if class_index is not None:
-            retrieval_list = self.retrieve_list(class_index)
-            relevant_windows: np.array = self.ground_truth == class_index
-        else:
-            retrieval_list = self.retrieve_attr_list(attr_index)
-            relevant_windows: np.array = np.zeros((len(self),))
-            for i in range(len(self)):
-                query = g.attribute_rep[attr_index, 1:]
-                # print(sum(query == self.attr_ground_truth[i]))
-                # print("query", query.astype(int))
-                # print("truth", self.attr_ground_truth[i])
-                # print(all(query == self.attr_ground_truth[i]))
-                # print("")
-                # if abs(sum(query == self.attr_ground_truth[i]) - len(g.attributes)) <= 0:
-                if all(query == self.attr_ground_truth[i]):
-                    relevant_windows[i] = 1
-
-        total_relevant_windows = sum(relevant_windows)  # False negatives + True Positives
-        # print("relevant windows", total_relevant_windows)
-        if total_relevant_windows == 0:
-            return math.nan
-
-        retrieved_windows = 0  # True Positives + False Positives
-        true_positives = 0
-
-        precision_list = []
-        for i in range(len(self)):
-            retrieved_windows += 1
-
-            # print("i", i, "/", len(self),"len(retrieval_list)", len(retrieval_list))
-            retrieved_window_index = retrieval_list[i]['index']
-
-            if relevant_windows[retrieved_window_index] == 1:
-                true_positives += 1
-            precision = true_positives / retrieved_windows
-            precision_list.append(precision)
-        precision_list = np.array(precision_list)
-
-        # print("precision_list", precision_list)
-        # print("relevant window", relevant_windows)
-        # print([(d['index'], relevant_windows[d['index']]) for d in retrieval_list])
-
-        sorted_relevant_windows = relevant_windows[[d['index'] for d in retrieval_list]]
-
-        average_precision = sum(precision_list * sorted_relevant_windows) / total_relevant_windows
-        return average_precision
-
-    def add_dataset(self, dataset):
-        if type(self) != type(dataset):
-            raise TypeError(f"Datasets have to be the same type. {type(self)} and {type(dataset)}")
-        if self.window_length != dataset.window_length:
-            raise ValueError(f"window_lengths don't match. {self.window_length} and {dataset.window_length}")
-        if self.window_step != dataset.window_step:
-            raise ValueError(f"window_steps don't match. {self.window_step} and {dataset.window_step}")
-
-        self.data = torch.cat((self.data, dataset.data), dim=2)
-        self.classes = np.vstack((self.classes, dataset.classes))
-        self.ground_truth = np.hstack((self.ground_truth, dataset.ground_truth))
-        self.attributes = np.vstack((self.attributes, dataset.attributes))
-        self.attr_ground_truth = np.vstack((self.attr_ground_truth, dataset.attr_ground_truth))
-        self.attribute_queries = np.vstack((self.attribute_queries, dataset.attribute_queries))
+            #print("indexes.shape", indexes.shape)
+            #print("sorted_classes.len", len(sorted_classes))
+            #print("sorted_distances.len", len(sorted_distances))
+            #print("g.classes.len", len(g.classes))
+            #print("self.classes.shape", self.classes.shape)
+            self.classes[i] = np.array(sorted_distances)
+            #print(self.classes[i])
+            #break
+        self.classes = 1 - self.classes
 
 class Annotator:
     def __init__(self, selected_network, deep_rep=False, paths=None):
@@ -275,7 +107,7 @@ class Annotator:
         print("Device: ", self.device)
         # Load network
         print("Loading Network:", self.selected_network)
-        self.network, self.config = self.load_network(self.selected_network)
+        self.network, self.config, self.att_rep = self.load_network(self.selected_network)
         if self.network is None:
             return
         self.network.deep_rep = self.deep_rep
@@ -290,10 +122,14 @@ class Annotator:
 
             state_dict = checkpoint['state_dict']
             config = checkpoint['network_config']
+            if 'att_rep' in checkpoint.keys():
+                att_rep = checkpoint['att_rep']
+            else:
+                att_rep = None
             network = Network(config)
             network.load_state_dict(state_dict)
             network.eval()
-            return network, config
+            return network, config, att_rep
 
         except KeyError as e:
             self.network = None
@@ -303,7 +139,7 @@ class Annotator:
             self.network = None
             print("Could not find the " + g.networks[index]["name"]
                   + " at " + g.networks_path + g.networks[index]['file_name'])
-            return None, None
+            return None, None, None
             # raise e
 
     def run(self):
@@ -312,6 +148,7 @@ class Annotator:
 
         window_length = self.config['sliding_window_length']
         dataset = DenseSlidingWindowDataset(g.data.mocap_data, window_length)
+        dataset_len = len(dataset)
         print(f"Segmenting data: 1/{1 + len(self.paths)}")
 
         # Making deep representation
@@ -323,11 +160,9 @@ class Annotator:
         print(f"Segmented data\n")
 
         # Forward through network
-
-        print(f"Annotating. Total samples: {len(dataset)}")
+        print(f"Annotating. Total samples: {dataset_len}")
         label_kind = self.config['labeltype']
-        percentiles = range(0, len(dataset), len(dataset)//10)
-        for i in range(len(dataset)):
+        for i in range(dataset_len):
             if self.deep_rep:
                 label, fc2 = self.network(dataset.__getitem__(i))
                 deep_rep.save_fc2(i, fc2)
@@ -341,56 +176,34 @@ class Annotator:
                 label = label.detach()
                 dataset.save_labels(i, label[0], label_kind)
             else:
-                raise ValueError(f"labeltype of the network has to be either 'class' or 'attributes'. "
-                                 f"It was '{label_kind}'")
-            if i in percentiles:
-                print(f"Annotating {i + 1}/{len(dataset)}")
+                raise Exception
 
-        # dataset.attributes = dataset.ground_truth
-        # print("Skipped Annotation using ground truth")
+            print(f"Annotating {i + 1}/{dataset_len}")
         print("Annotated\n")
 
         # Evaluate results
         print("Evaluating")
         if self.deep_rep:
             deep_rep.predict_labels_from_fc2()
+        if self.att_rep is not None:
+            # metrics = Metrics(config, self.device, att_rep)
+            metrics = self.att_rep
+        else:
+            metrics = None
 
-        graphs = None
-        #metric = "bce"
-        metric = "cosine"
-        dataset.predict_classes_from_attributes(metric)
-        dataset.predict_attributes(metric)
-        print("Evaluated\n")
-
-        graphs = self.show_graphs(dataset, "Cosine Similarity")
-
-        metric = "bce"
-        dataset.predict_classes_from_attributes(metric)
-        dataset.predict_attributes(metric)
-
-        graphs.extend(self.show_graphs(dataset, "BCE"))
-
-        return dataset, graphs
-
-    def show_graphs(self, dataset, y_axis):
         graphs = []
-        dlg = PlotDialog(None, 9)
-        dlg.setWindowTitle("Graph")
-        plots = dlg.graph_widgets()
 
-        class_graph = Graph(plots[0], "class", interval_lines=False)
-        class_graph.setup()
-        class_graph.reload_classes(g.windows.windows)
-        graphs.append(class_graph)
-
-        for i in range(0, len(g.classes)):
-            heatmap_data = dataset.make_heatmap(i, True)
-            plots[i + 1].setTitle(f'<font size="6"><b>{g.classes[i]}</b></font>')
-            # plots[i + 1].setYRange(0, 1)
-            # legend = plot.addLegend(offset=(-10, 15), labelTextSize='20pt')
-            plots[i + 1].getAxis('left').setLabel(y_axis)
-            plots[i + 1].plot(heatmap_data)
-            dlg.showMaximized()
+        dataset.predict_classes_from_attributes(metrics)
+        for i in range(len(g.classes)):
+            heatmap_data = dataset.make_heatmap(i)
+            dlg = PlotDialog(None)
+            dlg.setWindowTitle("Graph")
+            plot = dlg.graph_widget()
+            plot.setTitle(f'<font size="6"><b>{g.classes[i]}</b></font>')
+            #legend = plot.addLegend(offset=(-10, 15), labelTextSize='20pt')
+            plot.getAxis('left').setLabel("Cosine Similarity", **{'font-size': '14pt'})
+            plot.plot(heatmap_data)
+            _ = dlg.show()
             graphs.append(dlg)
         return graphs
 
@@ -404,11 +217,11 @@ class Annotator:
             existing_files = deep_rep.file_names
             new_files = [os.path.split(path)[1] for path in paths]
 
-            if [file for file in existing_files if file not in new_files]:
+            if [file for file in existing_files if file not in new_files] != []:
                 # The deep_rep has files that are not needed. Better make new deep_rep
                 # print("making new deep_rep. unneeded files")
                 deep_rep = None
-            elif [file for file in new_files if file not in existing_files]:
+            elif [file for file in new_files if file not in existing_files] != []:
                 # There are new files that need to be added to deep_rep.
                 # It will be updated in the following for-loop
                 # print("updating deep_rep. too few files")
