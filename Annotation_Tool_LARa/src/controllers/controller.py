@@ -119,7 +119,7 @@ class Graph:
         
         """
 
-        if graph_type not in ['joint', 'class', 'attribute', 'state']:
+        if graph_type not in ['joint', 'class', 'attribute', 'state', 'heatmap']:
             raise ValueError
 
         self.graph = plot_widget
@@ -133,7 +133,7 @@ class Graph:
         self.end_line = None
         self.play_line = None
 
-    def setup(self):
+    def setup(self):  # TODO add heatmap and its methods
 
         self.graph.clear()
         self.graph.plot([])

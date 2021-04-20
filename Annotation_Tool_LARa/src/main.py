@@ -19,10 +19,10 @@ import pyqtgraph.opengl as gl
 from controllers.state_correction_controller import StateCorrectionController
 from data_management import DataProcessor, WindowProcessor, WindowProcessorStates
 from dialogs import EnterIDDialog, SettingsDialog, OpenFileDialog
-from controllers.manual_annotation_controller import Manual_Annotation_Controller
-from controllers.label_correction_controller import Label_Correction_Controller
-from controllers.automatic_annotation_controller import Automatic_Annotation_Controller
-from controllers.prediction_revision_controller import Prediction_Revision_Controller
+from controllers.manual_annotation_controller import ManualAnnotationController
+from controllers.label_correction_controller import LabelCorrectionController
+from controllers.automatic_annotation_controller import AutomaticAnnotationController
+from controllers.prediction_revision_controller import PredictionRevisionController
 import global_variables as g
 
 pg.setConfigOption('background', 'w')
@@ -49,8 +49,8 @@ class GUI(QtWidgets.QMainWindow):
         self.tab_widget.currentChanged.connect(self.change_mode)
         # print(self.tab_widget.tabBar())
 
-        self.controllers = [Manual_Annotation_Controller(self), Label_Correction_Controller(self),
-                            Automatic_Annotation_Controller(self), Prediction_Revision_Controller(self)]
+        self.controllers = [ManualAnnotationController(self), LabelCorrectionController(self),
+                            AutomaticAnnotationController(self), PredictionRevisionController(self)]
 
         self.annotation_guide_button = self.findChild(QtWidgets.QPushButton, 'annotationGuideButton')
         self.annotation_guide_button.clicked.connect(lambda _: self.pause())
@@ -296,7 +296,7 @@ class PlaybackController:
         elif source == 'frame_slider':
             self.current_frame = self.frame_slider.value()
         elif source == 'loadedBackup':
-            if g.windows.windows.__len__() > 0:
+            if len(g.windows.windows) > 0:
                 self.current_frame = 1
                 # self.current_frame = g.windows.windows[-1][1]  # end value of the last window
             else:
@@ -520,10 +520,10 @@ class IOController:
             self.change_save_button_folder(annotated)
             controllers = []
             if annotated == 0 or annotated == 1:
-                controllers = [Manual_Annotation_Controller,
-                               Label_Correction_Controller,
-                               Automatic_Annotation_Controller,
-                               Prediction_Revision_Controller]
+                controllers = [ManualAnnotationController,
+                               LabelCorrectionController,
+                               AutomaticAnnotationController,
+                               PredictionRevisionController]
             elif annotated == 2:
                 controllers = [StateCorrectionController]
             self.gui.enabled = False
