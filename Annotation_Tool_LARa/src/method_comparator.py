@@ -220,7 +220,7 @@ def method_d(labels_15, labels_16, boost_15, boost_16):
             deep_rep = get_deep_representations(boost, config, network, window_step)
             
             dataset = LabeledSlidingWindowDataset(g.data.mocap_data, window_length, window_step)
-            dataset_len = dataset.__len__()
+            dataset_len = len(dataset)
             #dataset2 = LabeledSlidingWindowDataset(g.data.mocap_data, window_length, window_step)
 
     
@@ -273,7 +273,7 @@ def method_c(files):
         g.data = DataProcessor(file, False, True)
         
         dataset = LabeledSlidingWindowDataset(g.data.mocap_data, window_length, window_step)
-        dataset_len = dataset.__len__()
+        dataset_len = len(dataset)
     
         for i in range(dataset_len):
             label = network(dataset.__getitem__(i))

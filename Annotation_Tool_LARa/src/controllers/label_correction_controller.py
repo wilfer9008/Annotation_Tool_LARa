@@ -15,9 +15,9 @@ import pyqtgraph as pg
 from controllers.controller import Graph
 
 
-class Label_Correction_Controller(Controller):
+class LabelCorrectionController(Controller):
     def __init__(self, gui):
-        super(Label_Correction_Controller, self).__init__(gui)
+        super(LabelCorrectionController, self).__init__(gui)
 
         self.was_enabled_once = False
 
