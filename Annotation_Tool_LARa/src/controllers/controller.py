@@ -258,7 +258,6 @@ class Graph:
         for start, end, state_index, _ in state_windows:
             self.add_state(start, end, state_index)
 
-
     def update_attributes(self, attributes=None):
         """Updates attribute bars in graph
         

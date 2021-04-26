@@ -540,7 +540,7 @@ class OpenFileDialog(QtWidgets.QDialog):
         return QtWidgets.QDialog.accept(self)
 
 
-class PlotDialog(QtWidgets.QDialog):
+class PlotDialog(QtWidgets.QWidget):
     """
     example code:
         dlg = Plot_Dialog(QWidget)
@@ -548,7 +548,7 @@ class PlotDialog(QtWidgets.QDialog):
     
     """
 
-    def __init__(self, parent: QtWidgets.QWidget = None):
+    def __init__(self, parent: QtWidgets.QWidget = None, number_of_graphs=1):
         """Initializes the dialog and sets up the gui
 
         Arguments:
@@ -559,7 +559,18 @@ class PlotDialog(QtWidgets.QDialog):
         """
 
         super(PlotDialog, self).__init__(parent)
-        uic.loadUi(f'..{os.sep}ui{os.sep}plotwindow.ui', self)
+        # uic.loadUi(f'..{os.sep}ui{os.sep}plotwindow.ui', self)
+        self.number_of_graphs = number_of_graphs
+        self.graphs = []
+        vbox = QtWidgets.QVBoxLayout()
+        for i in range(self.number_of_graphs):
+            self.graphs.append(pg.PlotWidget(self))
+            vbox.addWidget(self.graphs[i])
+        self.setLayout(vbox)
+        self.graph = self.graphs[0]
 
     def graph_widget(self):
-        return self.findChild(pg.PlotWidget, 'plot')
+        return self.graph
+
+    def graph_widgets(self):
+        return self.graphs

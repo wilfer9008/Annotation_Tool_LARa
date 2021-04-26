@@ -1,4 +1,5 @@
 import os
+import math
 
 from PyQt5 import QtWidgets
 import dill
@@ -10,6 +11,7 @@ from network import Network
 from dialogs import PlotDialog
 import global_variables as g
 from data_management import SlidingWindowDataset, DeepRepresentationDataset
+from controllers.controller import Graph
 
 
 class DenseSlidingWindowDataset(SlidingWindowDataset):
@@ -27,7 +29,7 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
         else:
             raise ValueError
 
-    def make_ground_truth(self):
+    def make_ground_truth(self) -> np.array:
         ground_truth = np.zeros((self.__len__(),), dtype=int) - 1
 
         # labels = expand window classes to array
@@ -45,8 +47,14 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
 
         return ground_truth
 
-    def make_heatmap(self, class_index):
-        return self.classes[:, class_index]
+    def make_heatmap(self, class_index, normalize=False):
+        if not normalize:
+            return self.classes[:, class_index]
+        heatmap = self.classes[:, class_index]
+        min_ = min(heatmap)
+        max_ = max(heatmap)
+        heatmap = (heatmap - min_) / (max_ - min_)
+        return heatmap
 
     def predict_classes_from_attributes(self, att_rep):
         attributes = np.array(att_rep[:, 1:])
@@ -60,37 +68,83 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
         # self.top3_distances = np.zeros((g.data.number_samples, 3))
 
         for i in range(len(self)):
-            print(f"Evaluation: {i+1}/{len(self)}")
+            print(f"Evaluation: {i + 1}/{len(self)}")
             # self.top3_distances[i] = distances[i, sorted_distances[i, :3]]
 
             sorted_classes = att_rep[sorted_distances_indexes[i], 0]
             sorted_distances = distances[i, sorted_distances_indexes[i, :]]
-            #print("sorted_classes.len", len(sorted_classes))
-            #print("sorted_distances.len", len(sorted_distances))
-            #print(sorted_classes[:90])
-            #print(sorted_distances[:90])
+            # print("sorted_classes.len", len(sorted_classes))
+            # print("sorted_distances.len", len(sorted_distances))
+            # print(sorted_classes[:90])
+            # print(sorted_distances[:90])
 
             # First occurrence (index) of each class. np.unique is sorted by class not by index.
             indexes = np.unique(sorted_classes, return_index=True)[1]
-            #print(indexes)
+            # print(indexes)
 
             # The classes were already sorted by distance.
             # Sorting the indexes again will restore that order
             sorted_classes = [sorted_classes[index] for index in sorted(indexes)]
             sorted_distances = [sorted_distances[index] for index in sorted(indexes)]
 
-            #print(sorted_classes)
-            #print(sorted_distances)
+            # print(sorted_classes)
+            # print(sorted_distances)
 
-            #print("indexes.shape", indexes.shape)
-            #print("sorted_classes.len", len(sorted_classes))
-            #print("sorted_distances.len", len(sorted_distances))
-            #print("g.classes.len", len(g.classes))
-            #print("self.classes.shape", self.classes.shape)
+            # print("indexes.shape", indexes.shape)
+            # print("sorted_classes.len", len(sorted_classes))
+            # print("sorted_distances.len", len(sorted_distances))
+            # print("g.classes.len", len(g.classes))
+            # print("self.classes.shape", self.classes.shape)
             self.classes[i] = np.array(sorted_distances)
-            #print(self.classes[i])
-            #break
+            # print(self.classes[i])
+            # break
         self.classes = 1 - self.classes
+
+    def retrieve_list(self, class_index, length=None):
+        retrieval_list = []
+        heatmap = self.make_heatmap(class_index)
+
+        indexes = np.argsort(1 - heatmap)  # 1- Because np.argsort sorts in ascending order
+        if length is not None and length < len(indexes):
+            indexes = indexes[:length]
+        for i in indexes:
+            retrieval_list.append({"range": self.__range__(i), "index": i, "value": heatmap[i]})
+        return retrieval_list
+
+    def mean_average_precision(self):
+        sum = 0
+        nan_results = 0
+        for i in range(len(g.classes)):
+            avep = self.average_precision(i)
+            if not math.isnan(avep):
+                sum += avep
+            else:
+                nan_results += 1
+                print(f"Warning! Class {g.classes[i]} was not included in Mean Average Precision")
+        return sum/(len(g.classes)-nan_results)
+
+    def average_precision(self, class_index):
+        retrieval_list = self.retrieve_list(class_index)
+        relevant_windows: np.array = self.ground_truth == class_index
+
+        total_relevant_windows = sum(relevant_windows)  # False negatives + True Positives
+        #print("relevant windows", total_relevant_windows)
+
+        retrieved_windows = 0  # True Positives + False Positives
+        true_positives = 0
+
+        precision_list = []
+        for i in range(len(self)):
+            retrieved_windows += 1
+            retrieved_window_index = retrieval_list[i]['index']
+            if relevant_windows[retrieved_window_index]:
+                true_positives += 1
+            precision = true_positives / retrieved_windows
+            precision_list.append(precision)
+        precision_list = np.array(precision_list)
+
+        average_precision = sum(precision_list * relevant_windows) / total_relevant_windows
+        return average_precision
 
 class Annotator:
     def __init__(self, selected_network, deep_rep=False, paths=None):
@@ -194,18 +248,31 @@ class Annotator:
         graphs = []
 
         dataset.predict_classes_from_attributes(metrics)
-        for i in range(len(g.classes)):
+        dlg = PlotDialog(None, 9)
+        dlg.setWindowTitle("Graph")
+        plots = dlg.graph_widgets()
+
+        class_graph = Graph(plots[0], "class", interval_lines=False)
+        class_graph.setup()
+        class_graph.reload_classes(g.windows.windows)
+        graphs.append(class_graph)
+
+        for i in range(0, len(g.classes)):
             heatmap_data = dataset.make_heatmap(i)
-            dlg = PlotDialog(None)
-            dlg.setWindowTitle("Graph")
-            plot = dlg.graph_widget()
-            plot.setTitle(f'<font size="6"><b>{g.classes[i]}</b></font>')
-            #legend = plot.addLegend(offset=(-10, 15), labelTextSize='20pt')
-            plot.getAxis('left').setLabel("Cosine Similarity", **{'font-size': '14pt'})
-            plot.plot(heatmap_data)
-            _ = dlg.show()
+            plots[i + 1].setTitle(f'<font size="6"><b>{g.classes[i]}</b></font>')
+            # plots[i + 1].setYRange(0, 1)
+            # legend = plot.addLegend(offset=(-10, 15), labelTextSize='20pt')
+            plots[i + 1].getAxis('left').setLabel("Cosine Similarity")
+            plots[i + 1].plot(heatmap_data)
+            dlg.showMaximized()
             graphs.append(dlg)
-        return graphs
+        dlg = PlotDialog(None, 1)
+        plot = dlg.graph_widget()
+        heatmap_data = dataset.make_heatmap(0)
+        plot.plot(heatmap_data)
+        graphs.append(dlg)
+        dlg.show()
+        return dataset, graphs
 
     def get_deep_representations(self, paths, config, network):
         current_file_name = g.windows.file_name

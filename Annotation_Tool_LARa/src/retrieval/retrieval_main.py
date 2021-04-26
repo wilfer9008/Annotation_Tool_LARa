@@ -32,6 +32,13 @@ if __name__ == "__main__":
         g.windows = WindowProcessor(path, True, False)
         print(f"Current File: {file_name}. {i+1}/{len(paths)}")
         annotator = Annotator(3)
-        graphs = annotator.run()
+        dataset, graphs = annotator.run()
+        #print(dataset.retrieve_list(0))
+
+        for i,cls in enumerate(g.classes):
+            print(f"Average Precision of {cls}: {dataset.average_precision(i)}")
+
+        print(f"MAP: {dataset.mean_average_precision()}")
+
 
     app.exec_()
