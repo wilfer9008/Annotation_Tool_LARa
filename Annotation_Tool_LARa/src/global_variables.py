@@ -6,6 +6,9 @@ Created on 27.07.2020
 """
 
 import os
+
+import numpy as np
+
 from data_management import DataProcessor, WindowProcessor
 
 data: DataProcessor = None
@@ -31,6 +34,9 @@ with open(f'..{os.sep}labels{os.sep}class.txt', 'r') as f:
 
 with open(f'..{os.sep}labels{os.sep}attrib.txt', 'r') as f:
     attributes = f.read().split(',')
+
+attribute_rep = np.loadtxt("atts_per_class_dataset.txt", delimiter=",")
+
 
 states = None
 

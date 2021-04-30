@@ -20,8 +20,10 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
 
         self.classes = np.zeros((len(self), len(g.classes)), dtype=float) - 1
         self.attributes = np.zeros((len(self), len(g.attributes)), dtype=float) - 1
+        self.attribute_querys = None
 
         self.ground_truth = self.make_ground_truth()
+        self.attr_ground_truth = self.make_attr_ground_truth()
 
     def save_labels(self, index, label, label_kind):
         if label_kind == 'attributes':
@@ -47,6 +49,28 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
 
         return ground_truth
 
+    def make_attr_ground_truth(self) -> np.array:
+        ground_truth = np.zeros((len(self), len(g.attributes)), dtype=int) - 1
+
+        # labels = expand window classes to array
+        labels = None
+        for start, end, _, attr in g.windows.windows:
+            if labels is None:
+                labels = np.tile(attr, (end - start, 1))
+                #print(labels.shape)
+            else:
+                labels = np.vstack((labels, np.tile(attr, (end - start, 1))))
+
+        print(labels.shape)
+        # use mode to assign ground truth for each segment
+        for i in range(len(self)):
+            lower, upper = self.__range__(i)
+            values, counts = np.unique(labels[lower:upper], return_counts=True, axis=0)
+            order = np.argsort(counts)
+            ground_truth[i] = values[order[-1]]
+
+        return ground_truth
+
     def make_heatmap(self, class_index, normalize=False):
         if not normalize:
             return self.classes[:, class_index]
@@ -56,53 +80,50 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
         heatmap = (heatmap - min_) / (max_ - min_)
         return heatmap
 
+    def make_attr_heatmap(self, attr_index, normalize=False):
+        if not normalize:
+            return self.attribute_querys[:, attr_index]
+        heatmap = self.attribute_querys[:, attr_index]
+        min_ = min(heatmap)
+        max_ = max(heatmap)
+        heatmap = (heatmap - min_) / (max_ - min_)
+        return heatmap
+
     def predict_classes_from_attributes(self, att_rep):
         attributes = np.array(att_rep[:, 1:])
-        # attributes = attributes/np.linalg.norm(attributes,axis=1,keepdims=True)
-        # distances = distance_matrix(self.attributes,attributes)
+
         distances = 1 - cosine_similarity(self.attributes, attributes)
 
         sorted_distances_indexes = np.argsort(distances, 1)
-        # print("distances shape ", distances.shape)
-        # print("sorted distances shape", sorted_distances.shape)
-        # self.top3_distances = np.zeros((g.data.number_samples, 3))
 
         for i in range(len(self)):
             print(f"Evaluation: {i + 1}/{len(self)}")
-            # self.top3_distances[i] = distances[i, sorted_distances[i, :3]]
 
             sorted_classes = att_rep[sorted_distances_indexes[i], 0]
             sorted_distances = distances[i, sorted_distances_indexes[i, :]]
-            # print("sorted_classes.len", len(sorted_classes))
-            # print("sorted_distances.len", len(sorted_distances))
-            # print(sorted_classes[:90])
-            # print(sorted_distances[:90])
 
             # First occurrence (index) of each class. np.unique is sorted by class not by index.
             indexes = np.unique(sorted_classes, return_index=True)[1]
-            # print(indexes)
 
             # The classes were already sorted by distance.
             # Sorting the indexes again will restore that order
             sorted_classes = [sorted_classes[index] for index in sorted(indexes)]
             sorted_distances = [sorted_distances[index] for index in sorted(indexes)]
 
-            # print(sorted_classes)
-            # print(sorted_distances)
-
-            # print("indexes.shape", indexes.shape)
-            # print("sorted_classes.len", len(sorted_classes))
-            # print("sorted_distances.len", len(sorted_distances))
-            # print("g.classes.len", len(g.classes))
-            # print("self.classes.shape", self.classes.shape)
             self.classes[i] = np.array(sorted_distances)
-            # print(self.classes[i])
-            # break
+
         self.classes = 1 - self.classes
+
+    def predict_attributes(self, att_rep):
+        attributes = np.array(att_rep[:, 1:])
+        shape = attributes.shape
+
+        #self.attribute_querys = cosine_similarity(self.attributes, attributes)
+        self.attribute_querys = cosine_similarity(self.attr_ground_truth, attributes)
 
     def retrieve_list(self, class_index, length=None):
         retrieval_list = []
-        heatmap = self.make_heatmap(class_index)
+        heatmap = self.make_heatmap(class_index, True)
 
         indexes = np.argsort(1 - heatmap)  # 1- Because np.argsort sorts in ascending order
         if length is not None and length < len(indexes):
@@ -111,24 +132,59 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
             retrieval_list.append({"range": self.__range__(i), "index": i, "value": heatmap[i]})
         return retrieval_list
 
-    def mean_average_precision(self):
+    def retrieve_attr_list(self, attr_index, length=None):
+        retrieval_list = []
+        heatmap = self.make_attr_heatmap(attr_index, False)
+
+        indexes = np.argsort(1 - heatmap)  # 1- Because np.argsort sorts in ascending order
+        if length is not None and length < len(indexes):
+            indexes = indexes[:length]
+        for i in indexes:
+            retrieval_list.append({"range": self.__range__(i), "index": i, "value": heatmap[i]})
+        return retrieval_list
+
+    def mean_average_precision(self, classes=True):
         sum = 0
         nan_results = 0
-        for i in range(len(g.classes)):
-            avep = self.average_precision(i)
-            if not math.isnan(avep):
-                sum += avep
-            else:
-                nan_results += 1
-                print(f"Warning! Class {g.classes[i]} was not included in Mean Average Precision")
-        return sum/(len(g.classes)-nan_results)
+        if classes:
+            for i in range(len(g.classes)):
+                avep = self.average_precision(class_index=i)
+                if not math.isnan(avep):
+                    sum += avep
+                else:
+                    nan_results += 1
+                    print(f"Warning! Class {g.classes[i]} was not included in Mean Average Precision")
+            return sum / (len(g.classes) - nan_results)
+        else:
+            for i in range(g.attribute_rep.shape[0]):
+                avep = self.average_precision(attr_index=i)
+                if not math.isnan(avep):
+                    sum += avep
+                else:
+                    nan_results += 1
+                    print(f"Warning! Attribute Vector {i} was not included in Mean Average Precision")
+            return sum / (g.attribute_rep.shape[0] - nan_results)
 
-    def average_precision(self, class_index):
-        retrieval_list = self.retrieve_list(class_index)
-        relevant_windows: np.array = self.ground_truth == class_index
+    def average_precision(self, class_index=None, attr_index=None):
+        if class_index is None and attr_index is None:
+            raise ValueError
+        elif class_index is not None and attr_index is not None:
+            raise ValueError
+        if class_index is not None:
+            retrieval_list = self.retrieve_list(class_index)
+            relevant_windows: np.array = self.ground_truth == class_index
+        else:
+            retrieval_list = self.retrieve_attr_list(attr_index)
+            relevant_windows: np.array = np.zeros((len(self),))
+            for i in range(len(self)):
+                query = g.attribute_rep[attr_index, 1:]
+                #print(sum(query == self.attr_ground_truth[i]))
+                if abs(sum(query == self.attr_ground_truth[i]) - len(g.attributes)) <= 0:
+                    relevant_windows[i] = 1
+
 
         total_relevant_windows = sum(relevant_windows)  # False negatives + True Positives
-        #print("relevant windows", total_relevant_windows)
+        # print("relevant windows", total_relevant_windows)
 
         retrieved_windows = 0  # True Positives + False Positives
         true_positives = 0
@@ -137,7 +193,11 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
         for i in range(len(self)):
             retrieved_windows += 1
             retrieved_window_index = retrieval_list[i]['index']
-            if relevant_windows[retrieved_window_index]:
+            if i>0:
+                if retrieval_list[i]['value'] > retrieval_list[i-1]['value']:
+                    raise AssertionError
+
+            if relevant_windows[retrieved_window_index] == 1:
                 true_positives += 1
             precision = true_positives / retrieved_windows
             precision_list.append(precision)
@@ -145,6 +205,7 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
 
         average_precision = sum(precision_list * relevant_windows) / total_relevant_windows
         return average_precision
+
 
 class Annotator:
     def __init__(self, selected_network, deep_rep=False, paths=None):
@@ -246,7 +307,7 @@ class Annotator:
             metrics = None
 
         graphs = []
-
+        """
         dataset.predict_classes_from_attributes(metrics)
         dlg = PlotDialog(None, 9)
         dlg.setWindowTitle("Graph")
@@ -258,7 +319,7 @@ class Annotator:
         graphs.append(class_graph)
 
         for i in range(0, len(g.classes)):
-            heatmap_data = dataset.make_heatmap(i)
+            heatmap_data = dataset.make_heatmap(i,True)
             plots[i + 1].setTitle(f'<font size="6"><b>{g.classes[i]}</b></font>')
             # plots[i + 1].setYRange(0, 1)
             # legend = plot.addLegend(offset=(-10, 15), labelTextSize='20pt')
@@ -273,6 +334,9 @@ class Annotator:
         graphs.append(dlg)
         dlg.show()
         return dataset, graphs
+        """
+        dataset.predict_attributes(metrics)
+        return dataset, None
 
     def get_deep_representations(self, paths, config, network):
         current_file_name = g.windows.file_name
