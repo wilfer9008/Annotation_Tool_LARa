@@ -35,17 +35,23 @@ if __name__ == "__main__":
         dataset, graphs = annotator.run()
         #print(dataset.retrieve_list(0))
 
-        for i, attr in enumerate(g.attribute_rep):
-            print(f"Average Precision of {attr}: {dataset.average_precision(attr_index=i)}")
-        #for i, cls in enumerate(g.classes):
-        #    print(f"Average Precision of {cls}: {dataset.average_precision(i)}")
+        for j, attr in enumerate(g.attribute_rep):
+            avep = dataset.average_precision(attr_index=j)
+            if not math.isnan(avep):
+                print(f"Average Precision of {attr}: {avep}")
+        for j, cls in enumerate(g.classes):
+            print(f"Average Precision of {cls}: {dataset.average_precision(j)}")
 
-        #print(f"MAP Attributes: {dataset.mean_average_precision(classes=False)}")
-        #print(f"MAP Classes: {dataset.mean_average_precision(classes=True)}")
+        print(f"MAP Attributes: {dataset.mean_average_precision(classes=False)}")
+        print(f"MAP Classes: {dataset.mean_average_precision(classes=True)}")
 
-        query_index = 5
+        """query_index = 5
+
+        avep = dataset.average_precision(attr_index=5)
+        print(f"Average Precision of 5: {avep}")
+
         print(g.attribute_rep[5, 1:])
-        print(dataset.retrieve_attr_list(attr_index=query_index),10)
-
+        print(dataset.retrieve_attr_list(attr_index=query_index), 10)
+        """
 
     app.exec_()

@@ -20,7 +20,7 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
 
         self.classes = np.zeros((len(self), len(g.classes)), dtype=float) - 1
         self.attributes = np.zeros((len(self), len(g.attributes)), dtype=float) - 1
-        self.attribute_querys = None
+        self.attribute_queries = None
 
         self.ground_truth = self.make_ground_truth()
         self.attr_ground_truth = self.make_attr_ground_truth()
@@ -39,7 +39,7 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
         for start, end, class_, _ in g.windows.windows:
             labels = np.hstack((labels, np.repeat(class_, end - start)))
 
-        print(labels.shape)
+        print("ground thruth labels shape", labels.shape)
         # use mode to assign ground truth for each segment
         for i in range(len(self)):
             lower, upper = self.__range__(i)
@@ -61,13 +61,18 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
             else:
                 labels = np.vstack((labels, np.tile(attr, (end - start, 1))))
 
-        print(labels.shape)
+        print("attr ground thruth labels shape", labels.shape)
         # use mode to assign ground truth for each segment
         for i in range(len(self)):
             lower, upper = self.__range__(i)
             values, counts = np.unique(labels[lower:upper], return_counts=True, axis=0)
             order = np.argsort(counts)
             ground_truth[i] = values[order[-1]]
+
+            #print("values", values)
+            #print("counts", counts)
+            #print("order", order)
+            #print("ground_truth[i]", ground_truth[i], "\n")
 
         return ground_truth
 
@@ -82,8 +87,8 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
 
     def make_attr_heatmap(self, attr_index, normalize=False):
         if not normalize:
-            return self.attribute_querys[:, attr_index]
-        heatmap = self.attribute_querys[:, attr_index]
+            return self.attribute_queries[:, attr_index]
+        heatmap = self.attribute_queries[:, attr_index]
         min_ = min(heatmap)
         max_ = max(heatmap)
         heatmap = (heatmap - min_) / (max_ - min_)
@@ -115,15 +120,17 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
         self.classes = 1 - self.classes
 
     def predict_attributes(self, att_rep):
-        attributes = np.array(att_rep[:, 1:])
-        shape = attributes.shape
+        attribute_rep = np.array(att_rep[:, 1:])
+        # TODO replace cosine with bce
+        self.attribute_queries = cosine_similarity(self.attributes, attribute_rep)
+        #self.attribute_queries = cosine_similarity(self.attr_ground_truth, attribute_rep)
 
-        #self.attribute_querys = cosine_similarity(self.attributes, attributes)
-        self.attribute_querys = cosine_similarity(self.attr_ground_truth, attributes)
+        print(self.attribute_queries.shape)
+
 
     def retrieve_list(self, class_index, length=None):
         retrieval_list = []
-        heatmap = self.make_heatmap(class_index, True)
+        heatmap = self.make_heatmap(class_index, False)
 
         indexes = np.argsort(1 - heatmap)  # 1- Because np.argsort sorts in ascending order
         if length is not None and length < len(indexes):
@@ -179,12 +186,19 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
             for i in range(len(self)):
                 query = g.attribute_rep[attr_index, 1:]
                 #print(sum(query == self.attr_ground_truth[i]))
-                if abs(sum(query == self.attr_ground_truth[i]) - len(g.attributes)) <= 0:
+                #print("query", query.astype(int))
+                #print("truth", self.attr_ground_truth[i])
+                #print(all(query == self.attr_ground_truth[i]))
+                #print("")
+                #if abs(sum(query == self.attr_ground_truth[i]) - len(g.attributes)) <= 0:
+                if all(query == self.attr_ground_truth[i]):
                     relevant_windows[i] = 1
 
 
         total_relevant_windows = sum(relevant_windows)  # False negatives + True Positives
         # print("relevant windows", total_relevant_windows)
+        if total_relevant_windows == 0:
+            return math.nan
 
         retrieved_windows = 0  # True Positives + False Positives
         true_positives = 0
@@ -193,17 +207,19 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
         for i in range(len(self)):
             retrieved_windows += 1
             retrieved_window_index = retrieval_list[i]['index']
-            if i>0:
-                if retrieval_list[i]['value'] > retrieval_list[i-1]['value']:
-                    raise AssertionError
-
             if relevant_windows[retrieved_window_index] == 1:
                 true_positives += 1
             precision = true_positives / retrieved_windows
             precision_list.append(precision)
         precision_list = np.array(precision_list)
 
-        average_precision = sum(precision_list * relevant_windows) / total_relevant_windows
+        #print("precision_list", precision_list)
+        #print("relevantwindow", relevant_windows)
+        #print([(d['index'], relevant_windows[d['index']]) for d in retrieval_list])
+
+        sorted_relevant_windows = relevant_windows[[d['index'] for d in retrieval_list]]
+
+        average_precision = sum(precision_list * sorted_relevant_windows) / total_relevant_windows
         return average_precision
 
 
@@ -275,6 +291,7 @@ class Annotator:
         print(f"Segmented data\n")
 
         # Forward through network
+
         print(f"Annotating. Total samples: {dataset_len}")
         label_kind = self.config['labeltype']
         for i in range(dataset_len):
@@ -294,6 +311,9 @@ class Annotator:
                 raise Exception
 
             print(f"Annotating {i + 1}/{dataset_len}")
+
+        # dataset.attributes = dataset.ground_truth
+        # print("Skipped Annotation using ground truth")
         print("Annotated\n")
 
         # Evaluate results
