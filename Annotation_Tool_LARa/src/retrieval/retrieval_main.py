@@ -22,6 +22,9 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     paths = browse_files()
+    datasets = None
+    annotator = Annotator(3)
+
     for i, path in enumerate(paths):
         file_name = os.path.split(path)[1]
 
@@ -31,27 +34,25 @@ if __name__ == "__main__":
         g.data = DataProcessor(path, True)
         g.windows = WindowProcessor(path, True, False)
         print(f"Current File: {file_name}. {i+1}/{len(paths)}")
-        annotator = Annotator(3)
+
         dataset, graphs = annotator.run()
         #print(dataset.retrieve_list(0))
 
-        for j, attr in enumerate(g.attribute_rep):
-            avep = dataset.average_precision(attr_index=j)
-            if not math.isnan(avep):
-                print(f"Average Precision of {attr}: {avep}")
-        for j, cls in enumerate(g.classes):
-            print(f"Average Precision of {cls}: {dataset.average_precision(j)}")
+        if datasets is None:
+            datasets = dataset
+        else:
+            datasets.add_dataset(dataset)
 
-        print(f"MAP Attributes: {dataset.mean_average_precision(classes=False)}")
-        print(f"MAP Classes: {dataset.mean_average_precision(classes=True)}")
 
-        """query_index = 5
+    for j, attr in enumerate(g.attribute_rep):
+        avep = datasets.average_precision(attr_index=j)
+        if not math.isnan(avep):
+            print(f"Average Precision of {attr}: {avep}")
+    for j, cls in enumerate(g.classes):
+        print(f"Average Precision of {cls}: {datasets.average_precision(j)}")
 
-        avep = dataset.average_precision(attr_index=5)
-        print(f"Average Precision of 5: {avep}")
+    print(f"MAP Attributes: {datasets.mean_average_precision(classes=False)}")
+    print(f"MAP Classes: {datasets.mean_average_precision(classes=True)}")
 
-        print(g.attribute_rep[5, 1:])
-        print(dataset.retrieve_attr_list(attr_index=query_index), 10)
-        """
 
     app.exec_()

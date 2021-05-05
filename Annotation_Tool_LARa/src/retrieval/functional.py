@@ -1,29 +1,34 @@
-import os
 import math
+import os
 
-from PyQt5 import QtWidgets
 import dill
 import numpy as np
 import torch
+from PyQt5 import QtWidgets
 from sklearn.metrics.pairwise import cosine_similarity
 
-from network import Network
-from dialogs import PlotDialog
 import global_variables as g
 from data_management import SlidingWindowDataset, DeepRepresentationDataset
+from dialogs import PlotDialog
+from network import Network
 from controllers.controller import Graph
 
 
 class DenseSlidingWindowDataset(SlidingWindowDataset):
     def __init__(self, data: np.array, window_length: int):
         super(DenseSlidingWindowDataset, self).__init__(data, window_length, window_step=100)
+        length = super(DenseSlidingWindowDataset, self).__len__()
 
-        self.classes = np.zeros((len(self), len(g.classes)), dtype=float) - 1
-        self.attributes = np.zeros((len(self), len(g.attributes)), dtype=float) - 1
+        self.classes = np.zeros((length, len(g.classes)), dtype=float) - 1
+        self.attributes = np.zeros((length, len(g.attributes)), dtype=float) - 1
+
         self.attribute_queries = None
 
         self.ground_truth = self.make_ground_truth()
         self.attr_ground_truth = self.make_attr_ground_truth()
+
+    def __len__(self):
+        return self.classes.shape[0]
 
     def save_labels(self, index, label, label_kind):
         if label_kind == 'attributes':
@@ -32,14 +37,14 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
             raise ValueError
 
     def make_ground_truth(self) -> np.array:
-        ground_truth = np.zeros((self.__len__(),), dtype=int) - 1
+        ground_truth = np.zeros((len(self),), dtype=int) - 1
 
         # labels = expand window classes to array
         labels = np.array([])
         for start, end, class_, _ in g.windows.windows:
             labels = np.hstack((labels, np.repeat(class_, end - start)))
 
-        print("ground thruth labels shape", labels.shape)
+        # print("ground truth labels shape", labels.shape)
         # use mode to assign ground truth for each segment
         for i in range(len(self)):
             lower, upper = self.__range__(i)
@@ -57,11 +62,11 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
         for start, end, _, attr in g.windows.windows:
             if labels is None:
                 labels = np.tile(attr, (end - start, 1))
-                #print(labels.shape)
+                # print(labels.shape)
             else:
                 labels = np.vstack((labels, np.tile(attr, (end - start, 1))))
 
-        print("attr ground thruth labels shape", labels.shape)
+        # print("attr ground thruth labels shape", labels.shape)
         # use mode to assign ground truth for each segment
         for i in range(len(self)):
             lower, upper = self.__range__(i)
@@ -69,10 +74,10 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
             order = np.argsort(counts)
             ground_truth[i] = values[order[-1]]
 
-            #print("values", values)
-            #print("counts", counts)
-            #print("order", order)
-            #print("ground_truth[i]", ground_truth[i], "\n")
+            # print("values", values)
+            # print("counts", counts)
+            # print("order", order)
+            # print("ground_truth[i]", ground_truth[i], "\n")
 
         return ground_truth
 
@@ -94,39 +99,28 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
         heatmap = (heatmap - min_) / (max_ - min_)
         return heatmap
 
-    def predict_classes_from_attributes(self, att_rep):
-        attributes = np.array(att_rep[:, 1:])
+    def predict_classes_from_attributes(self):
+        attributes = g.attribute_rep[:, 1:]
 
-        distances = 1 - cosine_similarity(self.attributes, attributes)
+        distances = cosine_similarity(self.attributes, attributes)
 
-        sorted_distances_indexes = np.argsort(distances, 1)
+        sorted_distances_indexes = np.argsort(1 - distances, 1)
 
         for i in range(len(self)):
-            print(f"Evaluation: {i + 1}/{len(self)}")
+            # print(f"Evaluation: {i + 1}/{len(self)}")
 
-            sorted_classes = att_rep[sorted_distances_indexes[i], 0]
+            sorted_classes = g.attribute_rep[sorted_distances_indexes[i], 0]
             sorted_distances = distances[i, sorted_distances_indexes[i, :]]
 
             # First occurrence (index) of each class. np.unique is sorted by class not by index.
             indexes = np.unique(sorted_classes, return_index=True)[1]
+            # Get the distance
+            self.classes[i] = np.array(sorted_distances[indexes])
 
-            # The classes were already sorted by distance.
-            # Sorting the indexes again will restore that order
-            sorted_classes = [sorted_classes[index] for index in sorted(indexes)]
-            sorted_distances = [sorted_distances[index] for index in sorted(indexes)]
-
-            self.classes[i] = np.array(sorted_distances)
-
-        self.classes = 1 - self.classes
-
-    def predict_attributes(self, att_rep):
-        attribute_rep = np.array(att_rep[:, 1:])
+    def predict_attributes(self):
+        attribute_rep = g.attribute_rep[:, 1:]
         # TODO replace cosine with bce
         self.attribute_queries = cosine_similarity(self.attributes, attribute_rep)
-        #self.attribute_queries = cosine_similarity(self.attr_ground_truth, attribute_rep)
-
-        print(self.attribute_queries.shape)
-
 
     def retrieve_list(self, class_index, length=None):
         retrieval_list = []
@@ -151,26 +145,26 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
         return retrieval_list
 
     def mean_average_precision(self, classes=True):
-        sum = 0
+        avep_sum = 0
         nan_results = 0
         if classes:
             for i in range(len(g.classes)):
                 avep = self.average_precision(class_index=i)
                 if not math.isnan(avep):
-                    sum += avep
+                    avep_sum += avep
                 else:
                     nan_results += 1
                     print(f"Warning! Class {g.classes[i]} was not included in Mean Average Precision")
-            return sum / (len(g.classes) - nan_results)
+            return avep_sum / (len(g.classes) - nan_results)
         else:
             for i in range(g.attribute_rep.shape[0]):
                 avep = self.average_precision(attr_index=i)
                 if not math.isnan(avep):
-                    sum += avep
+                    avep_sum += avep
                 else:
                     nan_results += 1
                     print(f"Warning! Attribute Vector {i} was not included in Mean Average Precision")
-            return sum / (g.attribute_rep.shape[0] - nan_results)
+            return avep_sum / (g.attribute_rep.shape[0] - nan_results)
 
     def average_precision(self, class_index=None, attr_index=None):
         if class_index is None and attr_index is None:
@@ -185,15 +179,14 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
             relevant_windows: np.array = np.zeros((len(self),))
             for i in range(len(self)):
                 query = g.attribute_rep[attr_index, 1:]
-                #print(sum(query == self.attr_ground_truth[i]))
-                #print("query", query.astype(int))
-                #print("truth", self.attr_ground_truth[i])
-                #print(all(query == self.attr_ground_truth[i]))
-                #print("")
-                #if abs(sum(query == self.attr_ground_truth[i]) - len(g.attributes)) <= 0:
+                # print(sum(query == self.attr_ground_truth[i]))
+                # print("query", query.astype(int))
+                # print("truth", self.attr_ground_truth[i])
+                # print(all(query == self.attr_ground_truth[i]))
+                # print("")
+                # if abs(sum(query == self.attr_ground_truth[i]) - len(g.attributes)) <= 0:
                 if all(query == self.attr_ground_truth[i]):
                     relevant_windows[i] = 1
-
 
         total_relevant_windows = sum(relevant_windows)  # False negatives + True Positives
         # print("relevant windows", total_relevant_windows)
@@ -206,22 +199,39 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
         precision_list = []
         for i in range(len(self)):
             retrieved_windows += 1
+
+            # print("i", i, "/", len(self),"len(retrieval_list)", len(retrieval_list))
             retrieved_window_index = retrieval_list[i]['index']
+
             if relevant_windows[retrieved_window_index] == 1:
                 true_positives += 1
             precision = true_positives / retrieved_windows
             precision_list.append(precision)
         precision_list = np.array(precision_list)
 
-        #print("precision_list", precision_list)
-        #print("relevantwindow", relevant_windows)
-        #print([(d['index'], relevant_windows[d['index']]) for d in retrieval_list])
+        # print("precision_list", precision_list)
+        # print("relevant window", relevant_windows)
+        # print([(d['index'], relevant_windows[d['index']]) for d in retrieval_list])
 
         sorted_relevant_windows = relevant_windows[[d['index'] for d in retrieval_list]]
 
         average_precision = sum(precision_list * sorted_relevant_windows) / total_relevant_windows
         return average_precision
 
+    def add_dataset(self, dataset):
+        if type(self) != type(dataset):
+            raise TypeError(f"Datasets have to be the same type. {type(self)} and {type(dataset)}")
+        if self.window_length != dataset.window_length:
+            raise ValueError(f"window_lengths don't match. {self.window_length} and {dataset.window_length}")
+        if self.window_step != dataset.window_step:
+            raise ValueError(f"window_steps don't match. {self.window_step} and {dataset.window_step}")
+
+        self.data = torch.cat((self.data, dataset.data), dim=2)
+        self.classes = np.vstack((self.classes, dataset.classes))
+        self.ground_truth = np.hstack((self.ground_truth, dataset.ground_truth))
+        self.attributes = np.vstack((self.attributes, dataset.attributes))
+        self.attr_ground_truth = np.vstack((self.attr_ground_truth, dataset.attr_ground_truth))
+        self.attribute_queries = np.vstack((self.attribute_queries, dataset.attribute_queries))
 
 class Annotator:
     def __init__(self, selected_network, deep_rep=False, paths=None):
@@ -238,7 +248,7 @@ class Annotator:
         print("Device: ", self.device)
         # Load network
         print("Loading Network:", self.selected_network)
-        self.network, self.config, self.att_rep = self.load_network(self.selected_network)
+        self.network, self.config = self.load_network(self.selected_network)
         if self.network is None:
             return
         self.network.deep_rep = self.deep_rep
@@ -253,14 +263,10 @@ class Annotator:
 
             state_dict = checkpoint['state_dict']
             config = checkpoint['network_config']
-            if 'att_rep' in checkpoint.keys():
-                att_rep = checkpoint['att_rep']
-            else:
-                att_rep = None
             network = Network(config)
             network.load_state_dict(state_dict)
             network.eval()
-            return network, config, att_rep
+            return network, config
 
         except KeyError as e:
             self.network = None
@@ -270,7 +276,7 @@ class Annotator:
             self.network = None
             print("Could not find the " + g.networks[index]["name"]
                   + " at " + g.networks_path + g.networks[index]['file_name'])
-            return None, None, None
+            return None, None
             # raise e
 
     def run(self):
@@ -279,7 +285,6 @@ class Annotator:
 
         window_length = self.config['sliding_window_length']
         dataset = DenseSlidingWindowDataset(g.data.mocap_data, window_length)
-        dataset_len = len(dataset)
         print(f"Segmenting data: 1/{1 + len(self.paths)}")
 
         # Making deep representation
@@ -292,9 +297,10 @@ class Annotator:
 
         # Forward through network
 
-        print(f"Annotating. Total samples: {dataset_len}")
+        print(f"Annotating. Total samples: {len(dataset)}")
         label_kind = self.config['labeltype']
-        for i in range(dataset_len):
+        percentiles = range(0, len(dataset), len(dataset)//10)
+        for i in range(len(dataset)):
             if self.deep_rep:
                 label, fc2 = self.network(dataset.__getitem__(i))
                 deep_rep.save_fc2(i, fc2)
@@ -308,9 +314,10 @@ class Annotator:
                 label = label.detach()
                 dataset.save_labels(i, label[0], label_kind)
             else:
-                raise Exception
-
-            print(f"Annotating {i + 1}/{dataset_len}")
+                raise ValueError(f"labeltype of the network has to be either 'class' or 'attributes'. "
+                                 f"It was '{label_kind}'")
+            if i in percentiles:
+                print(f"Annotating {i + 1}/{len(dataset)}")
 
         # dataset.attributes = dataset.ground_truth
         # print("Skipped Annotation using ground truth")
@@ -320,15 +327,14 @@ class Annotator:
         print("Evaluating")
         if self.deep_rep:
             deep_rep.predict_labels_from_fc2()
-        if self.att_rep is not None:
-            # metrics = Metrics(config, self.device, att_rep)
-            metrics = self.att_rep
-        else:
-            metrics = None
 
-        graphs = []
-        """
-        dataset.predict_classes_from_attributes(metrics)
+        graphs = None
+
+        dataset.predict_classes_from_attributes()
+        dataset.predict_attributes()
+        print("Evaluated\n")
+
+        """graphs = []
         dlg = PlotDialog(None, 9)
         dlg.setWindowTitle("Graph")
         plots = dlg.graph_widgets()
@@ -339,7 +345,7 @@ class Annotator:
         graphs.append(class_graph)
 
         for i in range(0, len(g.classes)):
-            heatmap_data = dataset.make_heatmap(i,True)
+            heatmap_data = dataset.make_heatmap(i, True)
             plots[i + 1].setTitle(f'<font size="6"><b>{g.classes[i]}</b></font>')
             # plots[i + 1].setYRange(0, 1)
             # legend = plot.addLegend(offset=(-10, 15), labelTextSize='20pt')
@@ -352,11 +358,9 @@ class Annotator:
         heatmap_data = dataset.make_heatmap(0)
         plot.plot(heatmap_data)
         graphs.append(dlg)
-        dlg.show()
+        dlg.show()"""
+
         return dataset, graphs
-        """
-        dataset.predict_attributes(metrics)
-        return dataset, None
 
     def get_deep_representations(self, paths, config, network):
         current_file_name = g.windows.file_name
@@ -368,11 +372,11 @@ class Annotator:
             existing_files = deep_rep.file_names
             new_files = [os.path.split(path)[1] for path in paths]
 
-            if [file for file in existing_files if file not in new_files] != []:
+            if [file for file in existing_files if file not in new_files]:
                 # The deep_rep has files that are not needed. Better make new deep_rep
                 # print("making new deep_rep. unneeded files")
                 deep_rep = None
-            elif [file for file in new_files if file not in existing_files] != []:
+            elif [file for file in new_files if file not in existing_files]:
                 # There are new files that need to be added to deep_rep.
                 # It will be updated in the following for-loop
                 # print("updating deep_rep. too few files")
