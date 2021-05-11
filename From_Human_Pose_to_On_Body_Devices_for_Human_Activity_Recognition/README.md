@@ -1,7 +1,7 @@
 # ICPR20:From Human Pose to On Body Devices for Human Activity Recognition
 Implementation code for "From Human Pose to On Body Devices for Human Activity Recognition.
 
-Updating in progress..
+see https://ieeexplore.ieee.org/document/9412283
 
 ## Prerequisites
 The implementation is done in Python:
