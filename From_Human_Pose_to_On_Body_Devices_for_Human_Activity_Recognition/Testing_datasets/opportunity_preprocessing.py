@@ -313,6 +313,21 @@ class Opportunity(data.Dataset):
     ##################################################
 
     def opp_sliding_window(self, data_x, data_y):
+        '''
+        Performs the sliding window approach on the data and the labels
+
+        return three arrays.
+        - data, an array where first dim is the windows
+        - labels per window according to end, middle or mode
+        - all labels per window
+
+        @param data_x: ids for train
+        @param data_y: ids for train
+        @return data_x: Sequence train inputs [windows, C, T]
+        @return data_y_labels: Activity classes [windows, 1]
+        @return data_y_all: Activity classes for samples [windows, 1, T]
+        '''
+
         ws = self.config['sliding_window_length']
         ss = self.config['sliding_window_step']
 

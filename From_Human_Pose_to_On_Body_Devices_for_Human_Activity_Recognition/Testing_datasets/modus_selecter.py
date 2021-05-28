@@ -43,7 +43,18 @@ class Modus_Selecter(object):
 
         return
 
-    def save(self, acc_test, f1_weighted_test, f1_mean_test, ea_iter, type_simple = 'training'):
+    def save(self, acc_test, f1_weighted_test, f1_mean_test, ea_iter, type_simple='training'):
+        """
+        Save the results of traiing and testing according to the configuration.
+        As training is repeated several times, results are appended, and mean and std of all the repetitions
+        are computed.
+
+        @param acc_test: List of accuracies of val or testing
+        @param f1_weighted_test: List of F1w of val or testing
+        @param f1_mean_test: List of F1m of val or testing
+        @param ea_iter: Iteration of evolution
+        @param type_simple: Type of experiment
+        """
         
         xml_file_path = self.config['folder_exp'] + self.config['file_suffix']
 
@@ -82,17 +93,24 @@ class Modus_Selecter(object):
         return
 
     def train(self, itera=1, testing=False):
+        """
+        Train method. Train network for a certain number of repetitions
+        computing the val performance, Testing using test(), saving the performances
+
+        @param itera: training iteration, as training is repeated X number of times
+        @param testing: Enabling testing after training
+        """
         
         logging.info('    Network_selecter: Train')
         
         start_time_test = time.time()
-        
-        #There will be only one iteration
-        #As there is not evolution
+
         acc_train_ac = []
         f1_weighted_train_ac = []
         f1_mean_train_ac = []
 
+        #There will be only one iteration
+        #As there is not evolution
         if testing:
             acc_test_ac = []
             f1_weighted_test_ac = []
@@ -100,8 +118,10 @@ class Modus_Selecter(object):
 
         for iter_evl in range(itera):
             logging.info('    Network_selecter:    Train iter 0')
+            # Training the network and obtaining the validation results
             acc_train, f1_weighted_train, f1_mean_train = self.network.evolution_evaluation(ea_iter=iter_evl)
 
+            # Appending results for later saving in results file
             acc_train_ac.append(acc_train)
             f1_weighted_train_ac.append(f1_weighted_train)
             f1_mean_train_ac.append(f1_mean_train)
@@ -113,9 +133,11 @@ class Modus_Selecter(object):
                                                              acc_train,
                                                              f1_weighted_train,
                                                              f1_mean_train))
-            
+
+            # Saving the results
             self.save(acc_train_ac, f1_weighted_train_ac, f1_mean_train_ac, ea_iter=iter_evl)
 
+            # Testing the network
             if testing:
                 acc_test, f1_weighted_test, f1_mean_test = self.test(testing=True)
                 acc_test_ac.append(acc_test)
@@ -128,10 +150,19 @@ class Modus_Selecter(object):
 
         return
 
-    def test(self, testing = False):
+    def test(self, testing=False):
+        """
+        Test method. Testing the network , saving the performances
+
+        @param testing: Enabling testing after training
+        @return acc_test: accuracy of testing
+        @return f1_weighted_test: f1 weighted of testing
+        @return f1_mean_test: f1 mean of testing
+        """
         
         start_time_test = time.time()
-        
+
+        # Testing the network in folder (according to the conf)
         acc_test, f1_weighted_test, f1_mean_test = self.network.evolution_evaluation(ea_iter=0, testing=testing)
         
         elapsed_time_test = time.time() - start_time_test
@@ -139,6 +170,7 @@ class Modus_Selecter(object):
         logging.info('    Network_selecter:    Train: elapsed time {} acc {}, '
                      'f1_weighted {}, f1_mean {}'.format(elapsed_time_test, acc_test, f1_weighted_test, f1_mean_test))
 
+        # Saving the results
         if not testing:
             self.save([acc_test], [f1_weighted_test], [f1_mean_test], ea_iter=0, type_simple='testing')
             return
@@ -146,124 +178,10 @@ class Modus_Selecter(object):
         return acc_test, f1_weighted_test, f1_mean_test
 
 
-    def evolution(self):
-        logging.info('    Network_selecter: Evolution')
-
-        # Setting attribute population
-        if os.path.isfile('../' + self.config['folder_exp'] + '/iters.txt'):
-            best_attrs = self.attributes.load_attrs(0, name_file='best_attrs')
-            self.attrs_0 = best_attrs[0]['attrs']
-            self.network.set_attrs(self.attrs_0)
-            init_iter = self.load_iters() + 1
-
-            logging.info('    Network_selecter:     Loading previous training in iters {}...'.format(init_iter))
-        else:
-            self.attrs_0 = self.attributes.creating_init_population()
-            init_iter = 0
-            self.network.set_attrs(self.attrs_0)
-
-            logging.info('    Network_selecter:     No Loading training in iters {}...'.format(init_iter))
-
-        start_time_test = time.time()
-
-        # initial evaluation of the population number 0
-        acc_test, f1_weighted_test, f1_mean_test = self.network.evolution_evaluation(ea_iter=0)
-
-        elapsed_time_test = time.time() - start_time_test
-
-        logging.info(
-            '    Network_selecter:     EA: elapsed time {} acc {}, f1_weighted {}, f1_mean {}'.format(elapsed_time_test,
-                                                                                                      acc_test,
-                                                                                                      f1_weighted_test,
-                                                                                                      f1_mean_test))
-        #Save validation results
-        self.save(acc_test, f1_weighted_test, f1_mean_test, ea_iter = 0)
-
-        self.attributes.save_attrs(self.attrs_0, f1_weighted_test, init_iter, name_file='attrs')
-
-        #Setting up the fitness
-        best_fitness = f1_weighted_test
-        best_attr = np.copy(self.attrs_0)
-
-        fitness = []
-        all_fitness = []
-        all_acc = []
-        iters = []
-
-        fitness.append(f1_weighted_test)
-        all_fitness.append(f1_weighted_test)
-        all_acc.append(acc_test)
-        iters.append(init_iter)
-
-        np.savetxt(self.config["folder_exp"] + 'fitness.txt', fitness, fmt='%.5f')
-        np.savetxt(self.config["folder_exp"] + 'iters.txt', iters, fmt='%d')
-        np.savetxt(self.config["folder_exp"] + 'best_attributes.txt', best_attr, fmt='%d')
-        np.savetxt(self.config["folder_exp"] + 'all_fitness.txt', all_fitness, fmt='%.5f')
-        np.savetxt(self.config["folder_exp"] + 'all_accuracies.txt', all_acc, fmt='%.5f')
-
-
-        # Starting the evolution
-        epochs_training = self.config["epochs"]
-        for ea_iter in range(1, self.config["evolution_iter"]):
-
-            logging.info(
-                '    Network_selecter:     EA: iter {} from {} with epochs {}...'.format(ea_iter,
-                                                                                         self.config["evolution_iter"],
-                                                                                         epochs_training))
-            #Mutating the attributes
-            # attr_new = self.mutation_nonlocal_percentage(best_attr, best_percentage, number_K = 8)
-            # attr_new = self.mutation_local(best_attr)
-            # attr_new = self.mutation_nonlocal(best_attr, number_K = 4)
-            attr_new = self.attributes.mutation_global(best_attr)
-
-            #Setting the new attributes to the network
-            self.network.set_attrs(attr_new)
-
-            #training and validating the network
-            acc_test, f1_weighted_test, f1_mean_test = self.network.evolution_evaluation(ea_iter=ea_iter)
-
-            logging.info('    Network_selecter:     EA: elapsed time {} acc {}, f1_weighted {}, f1_mean {}'.format(
-                elapsed_time_test,
-                acc_test,
-                f1_weighted_test,
-                f1_mean_test))
-
-            #Store the fitness
-            all_fitness.append(f1_weighted_test)
-            np.savetxt(self.config["folder_exp"] + 'all_fitness.txt', all_fitness, fmt='%.5f')
-
-            self.save(acc_test, f1_weighted_test, f1_mean_test, ea_iter=ea_iter)
-
-            all_acc.append(acc_test)
-            np.savetxt(self.config["folder_exp"] + 'all_accuracies.txt', all_acc, fmt='%.5f')
-
-            #save the attributes
-            self.attributes.save_attrs(attr_new, f1_weighted_test, ea_iter, protocol_file='ab')
-
-            #select if fitness improved, if so, update the fitness and save the network and attributes
-            if f1_weighted_test > best_fitness:
-                logging.info('    Network_selecter:     EA: Got best attrs with f1{}...'.format(f1_weighted_test))
-
-                best_fitness = f1_weighted_test
-                best_attr = np.copy(attr_new)
-
-                fitness.append(f1_weighted_test)
-                iters.append(ea_iter)
-
-                #Saving the best attributes and its network
-                self.attributes.save_attrs(attr_new, f1_weighted_test, ea_iter, name_file='best_attrs')
-                self.network.save_network(ea_iter)
-
-                np.savetxt(self.config["folder_exp"] + 'fitness.txt', fitness, fmt='%.5f')
-                np.savetxt(self.config["folder_exp"] + 'iters.txt', iters, fmt='%d')
-                np.savetxt(self.config["folder_exp"] + 'best_attributes.txt', best_attr, fmt='%d')
-
-        return
-
-
-
     def net_modus(self):
-        
+        """
+        Setting the training, validation, evolution and final training.
+        """
         logging.info('    Network_selecter: Net modus: {}'.format(self.config['usage_modus']))
         if self.config['usage_modus'] == 'train':
             self.train(itera=5, testing=True)

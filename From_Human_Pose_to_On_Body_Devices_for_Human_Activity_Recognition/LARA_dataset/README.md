@@ -1,20 +1,28 @@
 # ICPR20:From Human Pose to On Body Devices for Human Activity Recognition
 Implementation code for "From Human Pose to On Body Devices for Human Activity Recognition.
 
-see https://ieeexplore.ieee.org/document/9412283
-
-## Prerequisites
-The implementation is done in Python:
-- torch
-- numpy
+Updating in progress..
 
 ## Dataset
 
 LARa dataset can be downloaded in https://zenodo.org/record/3862782#.XtVJOy9h3UI
 
-## Example
+## Usage
 
-Running the `main.py` script in LARa dataset, or Testing dataset.   
+### Preprocessing of:
+ - LARa Mocap
+ - LARa IMUs (called mbientlab)
+ - LARa virtual IMUs
+
+Following the create_dataset() method in `*preprocessing.py` files
+
+### Dataloader using a simple CSV file:
+Please check, `HARWindows.py`
+
+
+### Experiments
+Training/Testing, please address to the `main.py` script.
+Experiments can set set according to a given dataset, network and output
 
 ## Contact
 

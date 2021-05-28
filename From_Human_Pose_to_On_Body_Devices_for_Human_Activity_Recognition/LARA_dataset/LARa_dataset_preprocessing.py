@@ -20,7 +20,7 @@ from scipy.stats import norm, mode
 
 
 #folder path of the dataset
-FOLDER_PATH = "path_to_dataset"
+FOLDER_PATH = "path_to_dataset_LARa_Mocap"
 
 # Hardcoded number of sensor channels employed in the MoCap dataset
 NB_SENSOR_CHANNELS = 134
@@ -111,7 +111,8 @@ labels_persons = {"S01": 0, "S02": 1, "S03": 2, "S04": 3, "S05": 4, "S06": 5, "S
 
 
 def select_columns_opp(data):
-    """Selection of the columns employed in the MoCAP
+    """
+    Selection of the columns employed in the MoCAP
     excluding the measurements from lower back,
     as this became the center of the human body,
     and the rest of joints are normalized
@@ -144,7 +145,8 @@ def divide_x_y(data):
     return data_t, data_x, data_y
 
 def normalize(data):
-    """Normalizes all sensor channels
+    """
+    Normalizes all sensor channels
 
     :param data: numpy integer matrix
         Sensor data
@@ -165,64 +167,63 @@ def normalize(data):
     return data
 
 
-
-def opp_sliding_window(data_x, data_y, ws, ss, label_pos_end = True):
+def opp_sliding_window(data_x, data_y, ws, ss, label_pos_end=True):
     '''
     Performs the sliding window approach on the data and the labels
-    
+
     return three arrays.
     - data, an array where first dim is the windows
     - labels per window according to end, middle or mode
     - all labels per window
-    
+
     @param data_x: ids for train
     @param data_y: ids for train
     @param ws: ids for train
     @param ss: ids for train
     @param label_pos_end: ids for train
-    '''    
-
+    @return data_x: Sequence train inputs [Batch,1, C, T]
+    @return data_y_labels: Activity classes [B, 1]
+    @return data_y_all: Activity classes for samples [Batch,1,T]
+    '''
 
     print("Sliding window: Creating windows {} with step {}".format(ws, ss))
-    
-    data_x = sliding_window(data_x,(ws,data_x.shape[1]),(ss,1))
-    
+
+    data_x = sliding_window(data_x, (ws, data_x.shape[1]), (ss, 1))
+
     # Label from the end
     if label_pos_end:
-        data_y = np.asarray([[i[-1]] for i in sliding_window(data_y,(ws,data_y.shape[1]),(ss,1))])
+        data_y = np.asarray([[i[-1]] for i in sliding_window(data_y, (ws, data_y.shape[1]), (ss, 1))])
     else:
-    
-        #Label from the middle
         if False:
-            data_y_labels = np.asarray([[i[i.shape[0] // 2]] for i in sliding_window(data_y,(ws,data_y.shape[1]),(ss,1))])
+            # Label from the middle
+            # not used in experiments
+            data_y_labels = np.asarray(
+                [[i[i.shape[0] // 2]] for i in sliding_window(data_y, (ws, data_y.shape[1]), (ss, 1))])
         else:
-        
-            #Label according to mode
+            # Label according to mode
             try:
                 data_y_labels = []
-                for sw in sliding_window(data_y,(ws,data_y.shape[1]),(ss,1)):
+                for sw in sliding_window(data_y, (ws, data_y.shape[1]), (ss, 1)):
                     labels = np.zeros((20)).astype(int)
-                    count_l = np.bincount(sw[:,0], minlength = NUM_CLASSES)
+                    count_l = np.bincount(sw[:, 0], minlength=NUM_CLASSES)
                     idy = np.argmax(count_l)
-                    attrs = np.sum(sw[:,1:], axis = 0)
+                    attrs = np.sum(sw[:, 1:], axis=0)
                     attrs[attrs > 0] = 1
-                    labels[0] = idy  
+                    labels[0] = idy
                     labels[1:] = attrs
                     data_y_labels.append(labels)
                 data_y_labels = np.asarray(data_y_labels)
-            
-            
+
+
             except:
                 print("Sliding window: error with the counting {}".format(count_l))
                 print("Sliding window: error with the counting {}".format(idy))
                 return np.Inf
-            
-            #All labels per window
-            data_y_all = np.asarray([i[:] for i in sliding_window(data_y,(ws,data_y.shape[1]),(ss,1))])
-    
+
+            # All labels per window
+            data_y_all = np.asarray([i[:] for i in sliding_window(data_y, (ws, data_y.shape[1]), (ss, 1))])
+
     return data_x.astype(np.float32), data_y_labels.astype(np.uint8), data_y_all.astype(np.uint8)
-
-
 
 
 
@@ -245,6 +246,10 @@ def compute_max_min(ids):
     for P in persons:
         if P in ids:
             for r, R in enumerate(recordings):
+                # All of these if-cases are coming due to the naming of the recordings in the data.
+                # Not all the subjects have the same
+                # annotated recordings, nor annotators, nor annotations runs, nor scenarios.
+                # these will include all of the recordings for the subjects
                 if P in ["S01", "S02", "S03", "S04", "S05", "S06"]:
                     S = "L01"
                 else:
@@ -297,14 +302,13 @@ def compute_max_min(ids):
 
 def compute_min_num_samples(ids, boolean_classes=True, attr=0):
     '''
-    Compute the max and min values for normalizing the data.
+    Compute the minimum duration of a sequences with the same classes or attribute
     
-    
-    print max and min.
-    These values will be computed only once and the max min values
-    will be place as constants
+    This value will help selecting the best sliding window size
     
     @param ids: ids for train
+    @param boolean_classes: selecting between classes or attributes
+    @param attr: ids for attribute
     '''
 
     recordings = ['R{:02d}'.format(r) for r in range(1, 31)]
@@ -320,6 +324,10 @@ def compute_min_num_samples(ids, boolean_classes=True, attr=0):
     for P in persons:
         if P in ids:
             for r, R in enumerate(recordings):
+                # All of these if-cases are coming due to the naming of the recordings in the data.
+                # Not all the subjects have the same
+                # annotated recordings, nor annotators, nor annotations runs, nor scenarios.
+                # these will include all of the recordings for the subjects
                 if P in ["S01", "S02", "S03", "S04", "S05", "S06"]:
                     S = "L01"
                 else:
@@ -392,14 +400,18 @@ def compute_min_num_samples(ids, boolean_classes=True, attr=0):
 
 def compute_statistics_samples(ids, boolean_classes=True, attr=0):
     '''
-    Compute the max and min values for normalizing the data.
-    
-    
-    print max and min.
-    These values will be computed only once and the max min values
-    will be place as constants
+    Compute some statistics of the duration of the sequences data:
+
+    print:
+    Max and Min durations per class or attr
+    Mean and Std durations per class or attr
+    Lower whiskers durations per class or attr
+    1st quartile of durations per class or attr
+    Histogram of proportion per class or attr
     
     @param ids: ids for train
+    @param boolean_classes: selecting between classes or attributes
+    @param attr: ids for attribute
     '''
 
     recordings = ['R{:02d}'.format(r) for r in range(1, 31)]
@@ -418,6 +430,10 @@ def compute_statistics_samples(ids, boolean_classes=True, attr=0):
     for P in persons:
         if P in ids:
             for r, R in enumerate(recordings):
+                # All of these if-cases are coming due to the naming of the recordings in the data.
+                # Not all the subjects have the same
+                # annotated recordings, nor annotators, nor annotations runs, nor scenarios.
+                # these will include all of the recordings for the subjects
                 if P in ["S01", "S02", "S03", "S04", "S05", "S06"]:
                     S = "L01"
                 else:
@@ -497,8 +513,6 @@ def compute_statistics_samples(ids, boolean_classes=True, attr=0):
     axis_list_3.append(fig3.add_subplot(427))
     axis_list_3.append(fig3.add_subplot(428))  
 
-
-
     colours = {0 : 'b', 1 : 'g', 2 : 'r', 3 : 'c', 4 : 'm', 5 : 'y', 6 : 'k', 7 : 'greenyellow'}
     
     mins = []
@@ -539,12 +553,10 @@ def compute_statistics_samples(ids, boolean_classes=True, attr=0):
                             
         axis_list_3[cl].boxplot(counter_list_class[cl])
 
-
         axis_list_2[0].relim()
         axis_list_2[0].autoscale_view()
         axis_list_2[0].legend(loc='best')
-            
-            
+
         fig.canvas.draw()
         fig2.canvas.draw()
         plt.pause(2.0)
@@ -571,23 +583,25 @@ def compute_statistics_samples(ids, boolean_classes=True, attr=0):
     return
 
 
-
-
 ################
 # Generate data
 #################
-def generate_data(ids, sliding_window_length, sliding_window_step, data_dir = None, half = False,
-                  identity_bool = False, usage_modus = 'train'):
+def generate_data(ids, sliding_window_length, sliding_window_step, data_dir=None, half=False,
+                  identity_bool=False, usage_modus='train'):
     '''
     creates files for each of the sequences, which are extracted from a file
     following a sliding window approach
     
-    returns a numpy array
+    returns
+    Sequences are stored in given path
     
     @param ids: ids for train, val or test
     @param sliding_window_length: length of window for segmentation
     @param sliding_window_step: step between windows for segmentation
     @param data_dir: path to dir where files will be stored
+    @param half: using the half of the recording frequency
+    @param identity_bool: selecting for identity experiment
+    @param usage_modus: selecting Train, Val or testing
     '''
 
     if identity_bool:
@@ -602,13 +616,15 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir = No
 
     counter_seq = 0
     hist_classes_all = np.zeros(NUM_CLASSES)
-    
 
     for P in persons:
         if P not in ids:
             print("\nNo Person in expected IDS {}".format(P))
         else:
             if P == 'S11':
+                # Selecting the proportions of the train, val or testing according to the quentity of
+                # recordings per subject, as there are not equal number of recordings per subject
+                # see dataset for checking the recording files per subject
                 if identity_bool:
                     if usage_modus == 'train':
                         recordings = ['R{:02d}'.format(r) for r in range(1, 10)]
@@ -639,6 +655,10 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir = No
                 else:
                     recordings = ['R{:02d}'.format(r) for r in range(1, 31)]
             for R in recordings:
+                # All of these if-cases are coming due to the naming of the recordings in the data.
+                # Not all the subjects have the same
+                # annotated recordings, nor annotators, nor annotations runs, nor scenarios.
+                # these will include all of the recordings for the subjects
                 if P in ["S01", "S02", "S03", "S04", "S05", "S06"]:
                     S = "L01"
                 else:
@@ -684,6 +704,7 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir = No
                         data = np.delete(data, class_labels, 0)
                         labels = np.delete(labels, class_labels, 0)
 
+                        # halving the frequency
                         if half:
                             downsampling = range(0, data.shape[0], 2)
                             data = data[downsampling]
@@ -704,7 +725,6 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir = No
                         if np.sum(data_y == labels[:, 0]) == data_y.shape[0]:
 
                             # Sliding window approach
-
                             print("Starting sliding window")
                             X, y, y_all = opp_sliding_window(data_x, labels.astype(int),
                                                              sliding_window_length,
@@ -727,6 +747,7 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir = No
                                     seq = np.reshape(X[f], newshape = (1, X.shape[1], X.shape[2]))
                                     seq = np.require(seq, dtype=np.float)
 
+                                    # Storing the sequences
                                     obj = {"data": seq, "label": y[f], "labels": y_all[f],
                                            "identity": labels_persons[P]}
                                     f = open(os.path.join(data_dir, 'seq_{0:06}.pkl'.format(counter_seq)), 'wb')
@@ -734,7 +755,6 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir = No
                                     f.close()
 
                                     counter_seq += 1
-
                                 except:
                                     raise('\nError adding the seq')
 
@@ -761,6 +781,8 @@ def generate_data(ids, sliding_window_length, sliding_window_step, data_dir = No
 def generate_CSV(csv_dir, data_dir):
     '''
     Generate CSV file with path to all (Training) of the segmented sequences
+    This is done for the DATALoader for Torch, using a CSV file with all the paths from the extracted
+    sequences.
 
     @param csv_dir: Path to the dataset
     @param data_dir: Path of the training data
@@ -777,6 +799,8 @@ def generate_CSV(csv_dir, data_dir):
 def generate_CSV_final(csv_dir, data_dir1, data_dir2):
     '''
     Generate CSV file with path to all (Training and Validation) of the segmented sequences
+    This is done for the DATALoader for Torch, using a CSV file with all the paths from the extracted
+    sequences.
 
     @param csv_dir: Path to the dataset
     @param data_dir1: Path of the training data
@@ -832,12 +856,12 @@ def create_dataset(half=False):
 
     if half:
         "Path to the segmented sequences"
-        base_directory = '/data/fmoya/HAR/datasets/MoCap_dataset_half_freq/'
+        base_directory = '/path_where_sequences_will_ve_stored/MoCap_dataset_half_freq/'
         sliding_window_length = 100
         sliding_window_step = 12
     else:
         "Path to the segmented sequences"
-        base_directory = '/data/fmoya/HAR/datasets/MoCap_dataset/'
+        base_directory = '/path_where_sequences_will_ve_stored/MoCap_dataset/'
         sliding_window_length = 200
         sliding_window_step = 25
 
@@ -846,8 +870,7 @@ def create_dataset(half=False):
     data_dir_test = base_directory + 'sequences_test/'
 
     generate_data(train_ids, sliding_window_length=sliding_window_length,
-                  sliding_window_step=sliding_window_step, data_dir=data_dir_train, half=half,
-                  identity_bool=identity_bool, usage_modus='train')
+                  sliding_window_step=sliding_window_step, data_dir=data_dir_train, half=half, usage_modus='train')
     generate_data(val_ids, sliding_window_length=sliding_window_length,
                   sliding_window_step=sliding_window_step, data_dir=data_dir_val, half=half)
     generate_data(test_ids, sliding_window_length=sliding_window_length,
@@ -863,6 +886,17 @@ def create_dataset(half=False):
 
 
 if __name__ == '__main__':
+    # Creating dataset for LARA Mocap 200Hz or LARA Mocap 100Hz
+    # Set the path to where the segmented windows will be located
+    # This path will be needed for the main.py
+
+    # Dataset (extracted segmented windows) will be stored in a given folder by the user,
+    # However, inside the folder, there shall be the subfolders (sequences_train, sequences_val, sequences_test)
+    # These folders and subfolfders gotta be created manually by the user
+    # This as a sort of organisation for the dataset
+    # MoCap_dataset/sequences_train
+    # MoCap_dataset/sequences_val
+    # MoCap_dataset/sequences_test
 
     create_dataset(half=False)
 
