@@ -13,7 +13,7 @@ import global_variables as g
 from .controller import Controller, Graph
 
 
-class Prediction_Revision_Controller(Controller):
+class PredictionRevisionController(Controller):
     def __init__(self, gui):
         Controller.__init__(self, gui)
 

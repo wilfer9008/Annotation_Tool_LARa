@@ -16,9 +16,9 @@ from .controller import Controller, Graph
 import global_variables as g
 
 
-class Manual_Annotation_Controller(Controller):
+class ManualAnnotationController(Controller):
     def __init__(self, gui):
-        super(Manual_Annotation_Controller, self).__init__(gui)
+        super(ManualAnnotationController, self).__init__(gui)
         self.current_window = -1
         self.setup_widgets()
 
@@ -89,7 +89,7 @@ class Manual_Annotation_Controller(Controller):
 
         self.update_joint_graphs(self.combobox.currentText())
 
-        if g.windows.windows.__len__() > 0:
+        if len(g.windows.windows) > 0:
             _, end, _, _ = g.windows.windows[-1]
             end += 1
         else:
@@ -107,7 +107,7 @@ class Manual_Annotation_Controller(Controller):
 
         self.class_graph.reload_classes(g.windows.windows)
 
-        if self.enabled and g.windows.windows.__len__() > 0:
+        if self.enabled and len(g.windows.windows) > 0:
             start = g.windows.windows[-1][1] + 1
             self.start_line_edit.setText(str(start))
             self.end_line_edit.setText(str(start))
@@ -152,7 +152,7 @@ class Manual_Annotation_Controller(Controller):
                 dlg = SaveAttributesDialog(self.gui)
                 attribute_int = dlg.exec_()
                 if attribute_int > -1:
-                    format_string = '{0:0' + str(g.attributes.__len__()) + 'b}'
+                    format_string = '{0:0' + str(len(g.attributes)) + 'b}'
                     attributes = [(x == '1') + 0 for x in list(format_string.format(attribute_int))]
                     g.windows.save_window(start - 1, end, class_index,
                                        attributes)  # Subtracting 1 from start to index windows from 0.
@@ -185,10 +185,10 @@ class Manual_Annotation_Controller(Controller):
             if window_start >= window_end:
                 failed_test.append(2)
                 verified = False
-            if not (0 <= window_class < g.classes.__len__()):
+            if not (0 <= window_class < len(g.classes)):
                 failed_test.append(3)
                 verified = False
-            if window_attributes.__len__() is not g.attributes.__len__():
+            if len(window_attributes) is not len(g.attributes):
                 failed_test.append(4)
                 verified = False
 

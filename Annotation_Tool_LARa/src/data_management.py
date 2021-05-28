@@ -636,7 +636,7 @@ class WindowProcessor:
         for attribute in g.attributes:
             header += "," + attribute
 
-        data = np.zeros((g.data.number_samples, g.attributes.__len__() + 1))  # All attributes +1
+        data = np.zeros((g.data.number_samples, len(g.attributes) + 1))  # All attributes +1
         for start, end, class_index, attributes in self.windows:
             for i in range(start, end):
                 data[i, 0] = class_index
@@ -901,13 +901,13 @@ class LabeledSlidingWindowDataset(SlidingWindowDataset):
 
         super(LabeledSlidingWindowDataset, self).__init__(data, window_length, window_step)
 
-        self.classes = np.zeros((self.__len__(),
+        self.classes = np.zeros((len(self),
                                  g.data.number_samples,
-                                 g.classes.__len__() - 1),  # Classes -1 since network cant output class None
+                                 len(g.classes) - 1),  # Classes -1 since network cant output class None
                                 dtype=int) - 1
-        self.attributes = np.zeros((self.__len__(),
+        self.attributes = np.zeros((len(self),
                                     g.data.number_samples,
-                                    g.attributes.__len__()),
+                                    len(g.attributes)),
                                    dtype=float) - 1
 
     def save_labels(self, index, label, label_kind):
@@ -918,18 +918,11 @@ class LabeledSlidingWindowDataset(SlidingWindowDataset):
 
             self.attributes[index, lower:upper, :] = label
 
-    def evaluate_labels(self, label_kind, average=None, metric=None):
+    def evaluate_labels(self, label_kind, metric=None):
         if label_kind == 'attributes':
-            if average:
-                self.average_attributes()
-                # self.binarize_attributes() # moved to make_windows method
-                # so that it happens after class prediction
-            else:
-                self.binarize_attributes()
-                self.label_mode(label_kind)
+            self.average_attributes()
             if metric is not None:
                 self.predict_classes_from_attributes(metric)
-
         elif label_kind == 'class':
 
             self.label_mode(label_kind)
@@ -942,11 +935,11 @@ class LabeledSlidingWindowDataset(SlidingWindowDataset):
         result = np.zeros((g.data.number_samples, 19))
         for i in range(g.data.number_samples):
             frame = self.attributes[:, i, :]
-            for j in range(g.attributes.__len__()):
+            for j in range(len(g.attributes)):
                 attribute = frame[:, j][frame[:, j] > -1]
 
                 if not list(attribute):
-                    result[i] = np.zeros((g.attributes.__len__()))
+                    result[i] = np.zeros((len(g.attributes)))
                     result[i, -1] = 1
                 else:
                     result[i, j] = np.mean(attribute, 0, dtype=np.float)
@@ -972,25 +965,21 @@ class LabeledSlidingWindowDataset(SlidingWindowDataset):
                     segments_shape = segments.shape
                     segments_shape = (segments_shape[0], segments_shape[1] - 1)  # one class is removed
                     segments = segments[segments != top_j].reshape(segments_shape)
-
             self.classes = result
-
         elif label_kind == 'attributes':
-
+            # Not needed anymore. Was used when attributes weren't averaged but binarized first.
             labels = self.attributes  # n * samples * attributes
-
-            result = np.zeros((g.data.number_samples, g.attributes.__len__()), dtype=int) - 1
+            result = np.zeros((g.data.number_samples, len(g.attributes)), dtype=int) - 1
             for i in range(g.data.number_samples):
                 frame = labels[:, i, :]  # n * attributes
-                for j in range(g.attributes.__len__()):
+                for j in range(len(g.attributes)):
                     attribute = frame[:, j]
                     attribute = attribute[attribute > -1]
                     if not list(attribute):
-                        result[i] = np.zeros((g.attributes.__len__()))
+                        result[i] = np.zeros((len(g.attributes)))
                         result[i, -1] = 1
                     else:
                         result[i, j] = self.sorted_classes_vector(attribute)[-1]  # n
-
             self.attributes = result
 
     def sorted_classes_vector(self, arr):
@@ -1022,14 +1011,14 @@ class LabeledSlidingWindowDataset(SlidingWindowDataset):
             self.classes[i] = sorted_classes[:3]
 
     def generate_blank_attributes(self):
-        self.attributes = np.zeros((g.data.number_samples, g.attributes.__len__()), dtype=int)
+        self.attributes = np.zeros((g.data.number_samples, len(g.attributes)), dtype=int)
         # self.attributes[:,-1] = np.ones((g.data.number_samples), dtype=int)
         self.attributes[:, -1] = 1
 
-    def make_windows(self, label_kind, average, metric, deep_rep=None):
-        self.evaluate_labels(label_kind, average, metric)
-        if average:
-            self.binarize_attributes()
+    def make_windows(self, label_kind, metric, deep_rep=None):
+        self.evaluate_labels(label_kind, metric)
+
+        self.binarize_attributes()
 
         if deep_rep is not None:
             self.choose_3_from_6(deep_rep, False)  # TODO: make this toggleable
@@ -1073,14 +1062,14 @@ class LabeledSlidingWindowDataset(SlidingWindowDataset):
 
         xnor_classes = [not a ^ b for a, b in zip(self.classes[frame_a, :], self.classes[frame_b, :])]
         xnor_attributes = [not a ^ b for a, b in zip(self.attributes[frame_a], self.attributes[frame_b])]
-        return sum(xnor_classes) == 3 and sum(xnor_attributes) == g.attributes.__len__()
+        return sum(xnor_classes) == 3 and sum(xnor_attributes) == len(g.attributes)
 
     def check_existing_attrib_vector(self, windows_top3, metric):
         """Checks whether the Attribute vector is valid by looking if its in the metrics array"""
 
         metric_attributes = metric[:, 1:]
         # np.savetxt("metric", metric_attributes)
-        for i in range(windows_top3[0].__len__()):
+        for i in range(len(windows_top3[0])):
             attributes = np.array(windows_top3[0][i][3])
             # print(attributes)
             # print("att shape", attributes.shape)
@@ -1148,10 +1137,10 @@ class DeepRepresentationDataset(SlidingWindowDataset):
 
     def data_to_deep_rep(self, network):
         size = network.fc4.out_features  # TODO: think about fully convolutional fc4
-        deep_rep = np.zeros((self.__len__(), size))
+        deep_rep = np.zeros((len(self), size))
 
         # network.online = True
-        for i in range(self.__len__()):
+        for i in range(len(self)):
             _, deep_rep[i] = network(self.__getitem__(i))
 
         # network.online = False
@@ -1159,15 +1148,15 @@ class DeepRepresentationDataset(SlidingWindowDataset):
 
     def windows_to_segment_labels(self, windows):
         last_window = 0
-        labels = np.zeros((self.__len__(), 1 + g.attributes.__len__()))
-        for i in range(self.__len__()):
+        labels = np.zeros((len(self), 1 + len(g.attributes)))
+        for i in range(len(self)):  # for each segment find the best fitting window
             lower, upper = self.__range__(i)
             best_window_index = last_window
             best_iou = self.intersection_over_union(lower, upper,
                                                     windows[last_window][0],
                                                     windows[last_window][1])
 
-            for j in range(last_window + 1, windows.__len__()):
+            for j in range(last_window + 1, len(windows)):
                 start, end, _, _ = windows[j]
                 iou = self.intersection_over_union(lower, upper, start, end)
 
@@ -1229,7 +1218,7 @@ class DeepRepresentationDataset(SlidingWindowDataset):
 
         self.classes = np.zeros((g.data.number_samples, 3), dtype=np.int)
         self.top1_attributes = np.zeros((g.data.number_samples,
-                                         g.attributes.__len__()),
+                                         len(g.attributes)),
                                         dtype=np.int) - 1
         for i in range(g.data.number_samples):
             self.top3_distances[i] = distances[i, sorted_distances[i, :3]]
@@ -1242,3 +1231,4 @@ class DeepRepresentationDataset(SlidingWindowDataset):
             # Sorting the indexes again will restore that order
             sorted_classes = [sorted_classes[index] for index in sorted(indexes)]
             self.classes[i] = sorted_classes[:3]
+
