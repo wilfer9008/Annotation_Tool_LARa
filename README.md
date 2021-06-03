@@ -30,6 +30,13 @@ The implementation is done in Python 3.7:
 
 LARa dataset can be downloaded in https://zenodo.org/record/3862782#.XtVJOy9h3UI
 
+## Networks
+
+Networks are available in:
+https://tu-dortmund.sciebo.de/s/YkpqlYOffFrmFr0
+
+Place the networks in a folder called "networks"
+
 ## Example
 
 Running the `main.py` script in Annotation_Tool_LARa. 
