@@ -14,3 +14,6 @@ python main.py
 in the src folder 
 
 or by running start.bat
+
+Put this networks in a "network" folder
+https://tu-dortmund.sciebo.de/s/YkpqlYOffFrmFr0
