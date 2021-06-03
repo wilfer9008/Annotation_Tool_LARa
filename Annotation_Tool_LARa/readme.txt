@@ -15,5 +15,7 @@ in the src folder
 
 or by running start.bat
 
-Put this networks in a "network" folder
+Networks are available in:
 https://tu-dortmund.sciebo.de/s/YkpqlYOffFrmFr0
+
+Place the networks in a folder called "networks"
