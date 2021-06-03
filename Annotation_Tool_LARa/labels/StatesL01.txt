@@ -1,1 +1,0 @@
-S0_None,S1_PutEmptyBoxesOnCart,S2_MoveCartToRetrievalLocation,S3_RetrieveArticlesPlaceOnCart,S4_PutBoxesOnConveyor
