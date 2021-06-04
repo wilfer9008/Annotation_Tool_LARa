@@ -99,10 +99,23 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
         heatmap = (heatmap - min_) / (max_ - min_)
         return heatmap
 
-    def predict_classes_from_attributes(self):
-        attributes = g.attribute_rep[:, 1:]
+    def predict_classes_from_attributes(self, distance="cosine"):
+        attribute_rep = g.attribute_rep[:, 1:]
 
-        distances = cosine_similarity(self.attributes, attributes)
+        distances = None
+
+        if distance == "cosine":
+            distances = cosine_similarity(self.attributes, attribute_rep)
+        elif distance == "bce":
+            attributes = torch.from_numpy(self.attributes)
+            attribute_rep = torch.from_numpy(attribute_rep)
+            bceloss = torch.nn.BCELoss()
+            distances = np.ones((attributes.shape[0], attribute_rep.shape[0]))
+            for i in range(attributes.shape[0]):
+                for j in range(attribute_rep.shape[0]):
+                    distances[i, j] -= bceloss(attributes[i], attribute_rep[j]).item()/100
+        else:
+            ValueError(f"Supported distances are 'cosine' and 'bce'. But '{distance}' was given.")
 
         sorted_distances_indexes = np.argsort(1 - distances, 1)
 
@@ -117,10 +130,24 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
             # Get the distance
             self.classes[i] = np.array(sorted_distances[indexes])
 
-    def predict_attributes(self):
+    def predict_attributes(self, distance="cosine"):
         attribute_rep = g.attribute_rep[:, 1:]
+
         # TODO replace cosine with bce
-        self.attribute_queries = cosine_similarity(self.attributes, attribute_rep)
+        if distance == "cosine":
+            self.attribute_queries = cosine_similarity(self.attributes, attribute_rep)
+
+        elif distance == "bce":
+            attributes = torch.from_numpy(self.attributes)
+            attribute_rep = torch.from_numpy(attribute_rep)
+            bceloss = torch.nn.BCELoss()
+            self.attribute_queries = np.zeros((attributes.shape[0], attribute_rep.shape[0]))
+            for i in range(attributes.shape[0]):
+                for j in range(attribute_rep.shape[0]):
+                    self.attribute_queries[i, j] = bceloss(attributes[i], attribute_rep[j]).item()/100
+            self.attribute_queries = 1 - self.attribute_queries
+        else:
+            ValueError(f"Supported distances are 'cosine' and 'bce'. But '{distance}' was given.")
 
     def retrieve_list(self, class_index, length=None):
         retrieval_list = []
@@ -154,7 +181,7 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
                     avep_sum += avep
                 else:
                     nan_results += 1
-                    print(f"Warning! Class {g.classes[i]} was not included in Mean Average Precision")
+                    #print(f"Warning! Class {g.classes[i]} was not included in Mean Average Precision")
             return avep_sum / (len(g.classes) - nan_results)
         else:
             for i in range(g.attribute_rep.shape[0]):
@@ -163,7 +190,7 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
                     avep_sum += avep
                 else:
                     nan_results += 1
-                    print(f"Warning! Attribute Vector {i} was not included in Mean Average Precision")
+                    #print(f"Warning! Attribute Vector {i} was not included in Mean Average Precision")
             return avep_sum / (g.attribute_rep.shape[0] - nan_results)
 
     def average_precision(self, class_index=None, attr_index=None):
@@ -329,12 +356,24 @@ class Annotator:
             deep_rep.predict_labels_from_fc2()
 
         graphs = None
-
-        dataset.predict_classes_from_attributes()
-        dataset.predict_attributes()
+        #metric = "bce"
+        metric = "cosine"
+        dataset.predict_classes_from_attributes(metric)
+        dataset.predict_attributes(metric)
         print("Evaluated\n")
 
-        """graphs = []
+        graphs = self.show_graphs(dataset, "Cosine Similarity")
+
+        metric = "bce"
+        dataset.predict_classes_from_attributes(metric)
+        dataset.predict_attributes(metric)
+
+        graphs.extend(self.show_graphs(dataset, "BCE"))
+
+        return dataset, graphs
+
+    def show_graphs(self, dataset, y_axis):
+        graphs = []
         dlg = PlotDialog(None, 9)
         dlg.setWindowTitle("Graph")
         plots = dlg.graph_widgets()
@@ -349,18 +388,11 @@ class Annotator:
             plots[i + 1].setTitle(f'<font size="6"><b>{g.classes[i]}</b></font>')
             # plots[i + 1].setYRange(0, 1)
             # legend = plot.addLegend(offset=(-10, 15), labelTextSize='20pt')
-            plots[i + 1].getAxis('left').setLabel("Cosine Similarity")
+            plots[i + 1].getAxis('left').setLabel(y_axis)
             plots[i + 1].plot(heatmap_data)
             dlg.showMaximized()
             graphs.append(dlg)
-        dlg = PlotDialog(None, 1)
-        plot = dlg.graph_widget()
-        heatmap_data = dataset.make_heatmap(0)
-        plot.plot(heatmap_data)
-        graphs.append(dlg)
-        dlg.show()"""
-
-        return dataset, graphs
+        return graphs
 
     def get_deep_representations(self, paths, config, network):
         current_file_name = g.windows.file_name

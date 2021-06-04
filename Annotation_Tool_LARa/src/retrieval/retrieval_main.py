@@ -25,6 +25,9 @@ if __name__ == "__main__":
     datasets = None
     annotator = Annotator(3)
 
+    map_attr_sum = 0
+    map_cls_sum = 0
+
     for i, path in enumerate(paths):
         file_name = os.path.split(path)[1]
 
@@ -43,16 +46,27 @@ if __name__ == "__main__":
         else:
             datasets.add_dataset(dataset)
 
-
-    for j, attr in enumerate(g.attribute_rep):
-        avep = datasets.average_precision(attr_index=j)
-        if not math.isnan(avep):
-            print(f"Average Precision of {attr}: {avep}")
-    for j, cls in enumerate(g.classes):
-        print(f"Average Precision of {cls}: {datasets.average_precision(j)}")
-
-    print(f"MAP Attributes: {datasets.mean_average_precision(classes=False)}")
-    print(f"MAP Classes: {datasets.mean_average_precision(classes=True)}")
+        map_cls_sum += dataset.mean_average_precision(classes=True)
+        map_attr_sum += dataset.mean_average_precision(classes=False)
 
 
+    #for j, attr in enumerate(g.attribute_rep):
+    #    avep = datasets.average_precision(attr_index=j)
+    #    if not math.isnan(avep):
+    #        print(f"Average Precision of {attr}: {avep}")
+    #for j, cls in enumerate(g.classes):
+    #    print(f"Average Precision of {cls}: {datasets.average_precision(j)}")
+
+    #print(f"MAP Attributes: {datasets.mean_average_precision(classes=False)}")
+    #print(f"MAP Classes: {datasets.mean_average_precision(classes=True)}")
+
+    print(f"MMAP Attributes: {map_attr_sum/len(paths)}")
+    print(f"MMAP Classes: {map_cls_sum/len(paths)}")
+
+
+
+
+
+    window = QtWidgets.QWidget()
+    window.show()
     app.exec_()
