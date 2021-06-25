@@ -66,4 +66,4 @@ networks = {1: {'name': 'Class Network',
 annotation_guide_link = "https://docs.google.com/document/d/1RNahPI2sCZdx1Iy0Gfp-ALjFgd_e-AKnU78_DubN7iU/edit"
 network_download_link = "https://tu-dortmund.sciebo.de/s/YkpqlYOffFrmFr0"
 
-version = "225"
+version = "226"
