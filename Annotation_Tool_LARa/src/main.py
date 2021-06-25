@@ -109,7 +109,7 @@ class GUI(QtWidgets.QMainWindow):
 
         for i, controller in enumerate(controller_classes):
             self.controllers.append(controller(self))
-            #print(i, self.controllers[i])
+            # print(i, self.controllers[i])
             if self.enabled:
                 controller.enable_widgets()
 
@@ -118,7 +118,7 @@ class GUI(QtWidgets.QMainWindow):
             ctrl.revision_mode(enable)
 
     def pause(self):
-        #print("pause")
+        # print("pause")
         self.playback_controller.pause()
 
     def eventFilter(self, _, event):
@@ -431,7 +431,7 @@ class SkeletonGraphController:
         self.zgrid = gl.GLGridItem()
         self.graph.addItem(self.zgrid)
         floor_height = 0
-        for segment in [g.data.body_segments.reversed()[i]
+        for segment in [g.data.body_segments_reversed[i]
                         for i in ['L toe', 'R toe', 'L foot', 'R foot']]:
             segment_height = new_skeleton[segment * 2, 2]
             floor_height = min((floor_height, segment_height))
@@ -449,7 +449,7 @@ class IOController:
         self.current_file_label = self.gui.findChild(QtWidgets.QLabel, 'currentFileLabel')
 
         self.save_work_button = self.gui.findChild(QtWidgets.QPushButton, 'saveWorkButton')
-        #self.save_work_button.clicked.connect(lambda _:
+        # self.save_work_button.clicked.connect(lambda _:
         #                                      self.save_finished_progress(g.settings['saveFinishedPath']))
 
         self.settings_button = self.gui.findChild(QtWidgets.QPushButton, 'settingsButton')
@@ -484,6 +484,7 @@ class IOController:
         labeled_folder_exists = os.path.exists(g.settings['saveFinishedPath'])
         state_folder_exists = os.path.exists(g.settings['stateFinishedPath'])
         backup_folder_exists = os.path.exists(g.settings['backUpPath'])
+        network_folder_exists = os.path.exists(g.networks_path)
 
         if not all([new_folder_exists, labeled_folder_exists, state_folder_exists, backup_folder_exists]):
             message = "If you are seeing this Dialog, it means you are either "
@@ -507,6 +508,33 @@ class IOController:
             if not os.path.exists(g.settings['backUpPath']):
                 os.mkdir(g.settings['backUpPath'])
 
+        if not network_folder_exists:
+            os.mkdir(g.networks_path)
+            with open(f"{g.networks_path}{os.sep}readme.txt","wt") as txt:
+                txt.write("Networks are available in:\n")
+                txt.write("https://tu-dortmund.sciebo.de/s/YkpqlYOffFrmFr0\n\n")
+                txt.write("Place the networks in this folder.")
+                txt.flush()
+
+            message = "You are missing the Neural Networks for Automatic Annotation.<br>"
+            message += f"You can download them from <a href='{g.network_download_link}'>here</a>. "
+            message += "After you downloaded them place them into the networks folder. "
+            message += "Do you wish to download them now?"
+
+            result = QtWidgets.QMessageBox.information(self.gui, 'Welcome!', message,
+                                                       QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                                       QtWidgets.QMessageBox.No)
+            if result == QtWidgets.QMessageBox.Yes:
+                webbrowser.open(g.network_download_link)
+            elif result == QtWidgets.QMessageBox.No:
+                message = "The new networks folder now contains a readme with the download link, "
+                message += "if you need to download them later."
+
+                result = QtWidgets.QMessageBox.information(self.gui, 'Welcome!', message,
+                                                           QtWidgets.QMessageBox.Ok,
+                                                           QtWidgets.QMessageBox.Ok)
+
+
     def reload(self, mode):
         pass
 
@@ -515,7 +543,7 @@ class IOController:
         if dlg.exec_():
             file_path, annotated, load_backup = dlg.result
             file_name = os.path.split(file_path)[1]
-            g.get_states(file_name)
+
             self.save_work_button.setEnabled(False)
             self.change_save_button_folder(annotated)
             controllers = []
@@ -526,6 +554,7 @@ class IOController:
                                PredictionRevisionController]
             elif annotated == 2:
                 controllers = [StateCorrectionController]
+                g.get_states(file_name)
             self.gui.enabled = False
             self.gui.change_setup(controllers)
             if g.windows is not None:
@@ -533,8 +562,8 @@ class IOController:
 
             # TODO: add a try catch block here
             g.data = DataProcessor(file_path, annotated > 0)
-            if annotated !=2:
-                g.windows = WindowProcessor(file_path, annotated>0, load_backup)
+            if annotated != 2:
+                g.windows = WindowProcessor(file_path, annotated > 0, load_backup)
             else:
                 g.windows = WindowProcessorStates(file_path, True, load_backup)
 
@@ -551,12 +580,12 @@ class IOController:
             pass
         self.save_work_button.clicked.connect(lambda _: self.gui.pause())
         if annotated == 0 or annotated == 1:
-            #print(annotated,"saveFinished")
+            # print(annotated,"saveFinished")
             self.save_work_button.clicked.connect(lambda _:
                                                   self.save_finished_progress('Select labeled data directory',
                                                                               g.settings['saveFinishedPath']))
         elif annotated == 2:
-            #print(annotated, "stateFinished")
+            # print(annotated, "stateFinished")
             self.save_work_button.clicked.connect(lambda _:
                                                   self.save_finished_progress('Select state data directory',
                                                                               g.settings['stateFinishedPath']))
