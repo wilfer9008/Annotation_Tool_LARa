@@ -22,13 +22,20 @@ if __name__ == "__main__":
     sys.excepthook = except_hook
     app = QApplication(sys.argv)
 
+    average_att_rep()
+
     paths = browse_files()
     datasets = None
     annotator = Annotator(3)
 
-    map_attr_rep_sum = 0
-    map_attr_sum = 0
-    map_cls_sum = 0
+    map_attr_rep_sum_cos = 0
+    map_attr_sum_cos = 0
+    map_cls_sum_cos = 0
+
+    map_attr_rep_sum_bce = 0
+    map_attr_sum_bce = 0
+    map_cls_sum_bce = 0
+
     ap_attr = [0 for i in range(len(g.attributes))]
 
     for i, path in enumerate(paths):
@@ -49,9 +56,21 @@ if __name__ == "__main__":
         else:
             datasets.add_dataset(dataset)"""
 
-        map_cls_sum += dataset.mean_average_precision("classes")
-        map_attr_rep_sum += dataset.mean_average_precision("attr_rep")
-        map_attr_sum += dataset.mean_average_precision("attr")
+        metric = "cosine"
+        dataset.predict_classes_from_attributes(metric)
+        dataset.predict_attribute_reps(metric)
+
+        map_cls_sum_cos += dataset.mean_average_precision("classes")
+        map_attr_rep_sum_cos += dataset.mean_average_precision("attr_rep")
+        map_attr_sum_cos += dataset.mean_average_precision("attr")
+
+        metric = "bce"
+        dataset.predict_classes_from_attributes(metric)
+        dataset.predict_attribute_reps(metric)
+
+        map_cls_sum_bce += dataset.mean_average_precision("classes")
+        map_attr_rep_sum_bce += dataset.mean_average_precision("attr_rep")
+        map_attr_sum_bce += dataset.mean_average_precision("attr")
 
         for j in range(len(g.attributes)):
             ap = dataset.average_precision(attr_index=j)
@@ -70,12 +89,15 @@ if __name__ == "__main__":
     #print(f"MAP Attributes: {datasets.mean_average_precision(classes=False)}")
     #print(f"MAP Classes: {datasets.mean_average_precision(classes=True)}")
 
-    print(f"MMAP Attributes: {map_attr_sum / len(paths)}")
-    print(f"MMAP Attribute Representations: {map_attr_rep_sum / len(paths)}")
-    print(f"MMAP Classes: {map_cls_sum/len(paths)}")
+    print(f"MMAP Attributes COS: {map_attr_sum_cos / len(paths)}")
+    print(f"MMAP Attributes BCE: {map_attr_sum_bce / len(paths)}")
+    print(f"MMAP Attribute Representations COS: {map_attr_rep_sum_cos / len(paths)}")
+    print(f"MMAP Attribute Representations BCE: {map_attr_rep_sum_bce / len(paths)}")
+    print(f"MMAP Classes COS: {map_cls_sum_cos / len(paths)}")
+    print(f"MMAP Classes BCE: {map_cls_sum_bce / len(paths)}")
+
     for j, attr in enumerate(g.attributes):
         print(f"Averaged Average Precision of {attr:<25}: {ap_attr[j]/len(paths)}")
-
 
 
 

@@ -35,8 +35,7 @@ with open(f'..{os.sep}labels{os.sep}class.txt', 'r') as f:
 with open(f'..{os.sep}labels{os.sep}attrib.txt', 'r') as f:
     attributes = f.read().split(',')
 
-attribute_rep = np.loadtxt("atts_per_class_dataset.txt", delimiter=",")
-
+attribute_rep = np.loadtxt(f"..{os.sep}labels{os.sep}atts_per_class_dataset.txt", delimiter=",")
 
 states = None
 

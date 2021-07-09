@@ -212,7 +212,10 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
                 else:
                     nan_results += 1
                     #print(f"Warning! Attribute Vector {i} was not included in Mean Average Precision")
-            return avep_sum / (g.attribute_rep.shape[0] - nan_results)
+            if nan_results!= g.attribute_rep.shape[0]:
+                return avep_sum / (g.attribute_rep.shape[0] - nan_results)
+            else:
+                return 0
         elif type == "attr":
             for i in range(len(g.attributes)):
                 avep = self.average_precision(attr_index=i)
@@ -221,7 +224,7 @@ class DenseSlidingWindowDataset(SlidingWindowDataset):
                 else:
                     nan_results += 1
                     #print(f"Warning! Attribute Vector {i} was not included in Mean Average Precision")
-            return avep_sum / (g.attribute_rep.shape[0] - nan_results)
+            return avep_sum / (len(g.attributes) - nan_results)
         else:
             raise ValueError(f'Permitted types are "classes", "attr_rep" and "attr". "{type}" was given.' )
 
@@ -498,3 +501,14 @@ def browse_files(caption="caption"):
         filter=f'CSV Files (*norm_data.csv)',
         initialFilter='')[0]
     return paths
+
+def average_att_rep():
+    attr_rep = np.zeros((len(g.classes),len(g.attributes)+1))
+    for i in range(len(g.classes)):
+        class_i_attributes = g.attribute_rep[g.attribute_rep[:, 0] == i]
+        #print(class_i_attributes)
+        averaged_attr = np.mean(class_i_attributes,axis=0)
+        #print(averaged_attr,"\n")
+        attr_rep[i] = averaged_attr
+    g.attribute_rep = attr_rep
+    #print(g.attribute_rep)
