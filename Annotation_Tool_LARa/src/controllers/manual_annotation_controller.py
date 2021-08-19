@@ -235,7 +235,9 @@ class ManualAnnotationController(Controller):
     def get_start_frame(self):
         return int(self.start_line_edit.text())
 
-    def fixed_windows_mode(self, enable: bool):
-        # Controller.fixed_windows_mode(self, enable)
-        self.revision_mode_enabled = enable
-        self.save_labels_button.setEnabled(not enable)
+    def fixed_windows_mode(self, mode: str):
+        self.fixed_windows_mode_enabled = mode
+        if mode is None or mode == "none":
+            self.save_labels_button.setEnabled(True)
+        else:
+            self.save_labels_button.setEnabled(False)

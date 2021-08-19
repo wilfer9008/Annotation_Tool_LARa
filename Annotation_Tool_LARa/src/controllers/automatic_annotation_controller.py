@@ -99,7 +99,8 @@ class AutomaticAnnotationController(Controller):
     def enable_annotate_button(self):
         if self.selected_network > 0 \
                 and self.enabled \
-                and not self.fixed_window_mode_enabled:
+                and (self.fixed_window_mode_enabled is None
+                     or self.fixed_window_mode_enabled == "none"):
             self.annotate_button.setEnabled(True)
         else:
             self.annotate_button.setEnabled(False)
@@ -299,9 +300,9 @@ class AutomaticAnnotationController(Controller):
         self.class_graph_2.color_class_bars(colors)
         self.class_graph_3.color_class_bars(colors)
 
-    def fixed_windows_mode(self, enable: bool):
+    def fixed_windows_mode(self, mode: str):
         # Controller.fixed_windows_mode(self, enable)
-        self.fixed_window_mode_enabled = enable
+        self.fixed_window_mode_enabled = mode
 
         self.enable_annotate_button()
         self.enable_load_button()

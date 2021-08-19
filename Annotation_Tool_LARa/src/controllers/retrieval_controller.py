@@ -95,18 +95,23 @@ class RetrievalController(Controller):
         self.class_graph.update_frame_lines(-1000, -1000, self.gui.get_current_frame())
         self.distance_graph.update_frame_lines(-1000, -1000, self.gui.get_current_frame())
         self.distance_graph.update_plot(None)
-        self.distance_histogram.update_histogram(None,None)
+        self.distance_histogram.update_histogram(None, None)
 
-        if g.retrieval is not None:
-            self.metric_comboBox.setEnabled(True)
+        if g.retrieval is not None \
+                and (self.fixed_window_mode_enabled is None
+                     or self.fixed_window_mode_enabled in ["none", "retrieval"]):
+
             self.none_button.setEnabled(True)
 
-            if self.fixed_window_mode_enabled:
+            if self.fixed_window_mode_enabled == "retrieval":
                 self.retrieve_button.setEnabled(True)
+                self.metric_comboBox.setEnabled(True)
+            else:
+                self.retrieve_button.setEnabled(False)
+                self.metric_comboBox.setEnabled(False)
 
             if self.retrieved_list:
                 self.query_comboBox.setEnabled(True)
-
                 self.loop_checkBox.setEnabled(True)
                 self.before_lineEdit.setEnabled(True)
                 self.after_lineEdit.setEnabled(True)
@@ -144,8 +149,8 @@ class RetrievalController(Controller):
                 max_x = max(distances)
                 y_values, x_values = np.histogram(distances, bins=1000, range=(0, 1))
 
-                discard_min = sum([1 for x_value in x_values if x_value < min_x])-1
-                discard_max = sum([1 for x_value in x_values if x_value > max_x])-1
+                discard_min = sum([1 for x_value in x_values if x_value < min_x]) - 1
+                discard_max = sum([1 for x_value in x_values if x_value > max_x]) - 1
                 if discard_max == 0:
                     x_values = x_values[discard_min:]
                     y_values = y_values[discard_min:]
@@ -263,7 +268,7 @@ class RetrievalController(Controller):
             intervals = [g.retrieval.__range__(i) for i in range(len(g.retrieval))]
             g.windows.windows = [(s, e, len(g.classes) - 1, error_attr) for (s, e) in intervals]
             g.windows.make_backup()
-            self.gui.fixed_windows_mode(True)
+            self.gui.fixed_windows_mode("retrieval")
 
     def disable_fixed_window_mode(self):
         message = ("This will disable fixed-window-size mode.\n"
@@ -276,22 +281,24 @@ class RetrievalController(Controller):
             QtWidgets.QMessageBox.Cancel)
 
         if revision_mode_warning == QtWidgets.QMessageBox.Yes:
-            self.gui.fixed_windows_mode(False)
+            self.gui.fixed_windows_mode("none")
 
-    def fixed_windows_mode(self, enable: bool):
-        self.fixed_window_mode_enabled = enable
+    def fixed_windows_mode(self, mode: str):
+        self.fixed_window_mode_enabled = mode
 
-        if enable:
+        if mode == "retrieval":
             self.none_button.clicked.disconnect()
             self.none_button.clicked.connect(lambda _: self.disable_fixed_window_mode())
             self.none_button.setText("Stop retrieval mode")
-
-        else:
+        elif mode is None or mode == "none":
             self.none_button.clicked.disconnect()
             self.none_button.clicked.connect(lambda _: self.set_to_none())
             self.none_button.setText("Set all to None")
+            self.none_button.setEnabled(True)
 
             self.retrieved_list = []
+        else:
+            self.none_button.setEnabled(False)
 
         self.reload()
 

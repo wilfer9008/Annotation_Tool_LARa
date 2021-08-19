@@ -111,7 +111,7 @@ class GUI(QtWidgets.QMainWindow):
             if self.enabled:
                 controller.enable_widgets()
 
-    def fixed_windows_mode(self, enable: bool):
+    def fixed_windows_mode(self, enable: str):
         for ctrl in self.controllers:
             ctrl.fixed_windows_mode(enable)
 

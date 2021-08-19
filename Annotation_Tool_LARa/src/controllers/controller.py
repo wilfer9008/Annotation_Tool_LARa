@@ -18,7 +18,7 @@ class Controller:
         self.gui = gui
         self.widget = None
         self.enabled = False
-        self.fixed_window_mode_enabled = False
+        self.fixed_window_mode_enabled = "none"
         self.status_window = None
         # self.setup_widgets()
 
@@ -41,7 +41,7 @@ class Controller:
     def new_frame(self, frame):
         print("overwrite new_frame(self,frame) in", type(self))
 
-    def fixed_windows_mode(self, enable: bool):
+    def fixed_windows_mode(self, mode: str):
         print("overwrite fixed_windows_mode(self,enable) in", type(self))
 
     def get_start_frame(self):
@@ -104,7 +104,7 @@ class ControlledWidget(QWidget):
     def reload(self):
         self.controller.reload()
 
-    def revision_mode(self, enable: bool):
+    def fixed_window_mode(self, enable: bool):
         self.controller.fixed_windows_mode(enable)
 
 
