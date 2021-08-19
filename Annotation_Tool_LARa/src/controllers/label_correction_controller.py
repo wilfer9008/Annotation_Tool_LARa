@@ -154,8 +154,8 @@ class LabelCorrectionController(Controller):
         # print("lcm.set_enabled:",\
         #      "\n\t self.enabled:",self.enabled,\
         #      "\n\t enable:",enable,\
-        #      "\n\t revision:",self.revision_mode_enabled)
-        if self.revision_mode_enabled:
+        #      "\n\t revision:",self.fixed_window_mode_enabled)
+        if self.fixed_window_mode_enabled:
             self.split_at_lineEdit.setEnabled(False)
             self.move_start_lineEdit.setEnabled(False)
             self.move_end_lineEdit.setEnabled(False)
@@ -226,7 +226,8 @@ class LabelCorrectionController(Controller):
         for button, checked in zip(self.attributeButtons, window[3]):
             button.setChecked(checked)
 
-        if self.revision_mode_enabled:
+        # TODO: remove second condition once fixed_window_modes are separated or change differently
+        if self.fixed_window_mode_enabled and len(g.windows.windows) == len(g.windows.windows_1):
             # print(window_index, len(g.windows.windows_1))
             top_buttons = [g.windows.windows_1[window_index][2],
                            g.windows.windows_2[window_index][2],
@@ -442,8 +443,8 @@ class LabelCorrectionController(Controller):
             return g.windows.windows[self.current_window][0] + 1
         return 1
 
-    def revision_mode(self, enable: bool):
-        self.revision_mode_enabled = enable
+    def fixed_windows_mode(self, enable: bool):
+        self.fixed_window_mode_enabled = enable
 
         if not enable:
             for i, name in enumerate(g.classes):

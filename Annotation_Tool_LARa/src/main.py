@@ -16,13 +16,10 @@ from PyQt5.QtCore import pyqtSignal, Qt, QEvent
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 
-from controllers.state_correction_controller import StateCorrectionController
+from controllers import *
 from data_management import DataProcessor, WindowProcessor, WindowProcessorStates
 from dialogs import EnterIDDialog, SettingsDialog, OpenFileDialog
-from controllers.manual_annotation_controller import ManualAnnotationController
-from controllers.label_correction_controller import LabelCorrectionController
-from controllers.automatic_annotation_controller import AutomaticAnnotationController
-from controllers.prediction_revision_controller import PredictionRevisionController
+
 import global_variables as g
 
 pg.setConfigOption('background', 'w')
@@ -50,7 +47,8 @@ class GUI(QtWidgets.QMainWindow):
         # print(self.tab_widget.tabBar())
 
         self.controllers = [ManualAnnotationController(self), LabelCorrectionController(self),
-                            AutomaticAnnotationController(self), PredictionRevisionController(self)]
+                            AutomaticAnnotationController(self), PredictionRevisionController(self),
+                            RetrievalController(self)]
 
         self.annotation_guide_button = self.findChild(QtWidgets.QPushButton, 'annotationGuideButton')
         self.annotation_guide_button.clicked.connect(lambda _: self.pause())
@@ -113,9 +111,9 @@ class GUI(QtWidgets.QMainWindow):
             if self.enabled:
                 controller.enable_widgets()
 
-    def revision_mode(self, enable: bool):
+    def fixed_windows_mode(self, enable: bool):
         for ctrl in self.controllers:
-            ctrl.revision_mode(enable)
+            ctrl.fixed_windows_mode(enable)
 
     def pause(self):
         # print("pause")
@@ -302,13 +300,15 @@ class PlaybackController:
             else:
                 self.current_frame = 1
             self.frame_slider.setValue(self.current_frame)
-        else:  # 'current_frame_line_edit'
+        elif source == 'current_frame_line_edit':
             self.current_frame = int(self.current_frame_line_edit.text())
             if self.current_frame > g.data.number_samples:
                 self.current_frame = g.data.number_samples
             else:
                 self.current_frame = max((self.current_frame, 1))
             self.frame_slider.setValue(self.current_frame)
+        else:
+            raise ValueError(f"Unknown source passed: {source}")
 
         self.currentFrameLabel.setText(
             f"Current Frame: {self.current_frame}/{g.data.number_samples}")
@@ -332,7 +332,7 @@ class PlaybackController:
         return self.current_frame - 1
 
     def set_start_frame(self):
-        start = str(self.gui.get_start_frame())
+        start = str(self.gui.get_start_frame()+1)
         self.current_frame_line_edit.setText(start)
         self.frame_changed('current_frame_line_edit')
 
@@ -510,7 +510,7 @@ class IOController:
 
         if not network_folder_exists:
             os.mkdir(g.networks_path)
-            with open(f"{g.networks_path}{os.sep}readme.txt","wt") as txt:
+            with open(f"{g.networks_path}{os.sep}readme.txt", "wt") as txt:
                 txt.write("Networks are available in:\n")
                 txt.write("https://tu-dortmund.sciebo.de/s/YkpqlYOffFrmFr0\n\n")
                 txt.write("Place the networks in this folder.")
@@ -534,7 +534,6 @@ class IOController:
                                                            QtWidgets.QMessageBox.Ok,
                                                            QtWidgets.QMessageBox.Ok)
 
-
     def reload(self, mode):
         pass
 
@@ -551,7 +550,8 @@ class IOController:
                 controllers = [ManualAnnotationController,
                                LabelCorrectionController,
                                AutomaticAnnotationController,
-                               PredictionRevisionController]
+                               PredictionRevisionController,
+                               RetrievalController]
             elif annotated == 2:
                 controllers = [StateCorrectionController]
                 g.get_states(file_name)
@@ -559,6 +559,7 @@ class IOController:
             self.gui.change_setup(controllers)
             if g.windows is not None:
                 g.windows.close()
+                g.retrieval = None
 
             # TODO: add a try catch block here
             g.data = DataProcessor(file_path, annotated > 0)

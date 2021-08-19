@@ -18,7 +18,7 @@ class Controller:
         self.gui = gui
         self.widget = None
         self.enabled = False
-        self.revision_mode_enabled = False
+        self.fixed_window_mode_enabled = False
         self.status_window = None
         # self.setup_widgets()
 
@@ -41,11 +41,11 @@ class Controller:
     def new_frame(self, frame):
         print("overwrite new_frame(self,frame) in", type(self))
 
-    def revision_mode(self, enable: bool):
-        print("overwrite revision_mode(self,enable) in", type(self))
+    def fixed_windows_mode(self, enable: bool):
+        print("overwrite fixed_windows_mode(self,enable) in", type(self))
 
     def get_start_frame(self):
-        print("overwrite revision_mode(self,enable) in", type(self))
+        print("overwrite fixed_windows_mode(self,enable) in", type(self))
 
     def add_status_message(self, msg):
         self.status_window.append(msg + '\n')
@@ -105,22 +105,23 @@ class ControlledWidget(QWidget):
         self.controller.reload()
 
     def revision_mode(self, enable: bool):
-        self.controller.revision_mode(enable)
+        self.controller.fixed_windows_mode(enable)
 
 
 class Graph:
     def __init__(self, plot_widget, graph_type, **kwargs):
         """
         
-        graph_type: 'joint','class','attribute'
+        graph_type: 'data','class','attribute'
         
         kwargs = {'label','unit','AutoSIPrefix',interval_lines,
                   'number_classes'}
         
         """
 
-        if graph_type not in ['joint', 'class', 'attribute', 'state', 'heatmap']:
-            raise ValueError
+        if graph_type not in ['data', 'class', 'attribute', 'state', 'histogram']:  # , 'heatmap']:
+            raise ValueError(f"Received unknown graph_type: {graph_type}. Accepted graph_types are: "
+                             "'data', 'class', 'attribute' and 'state'.")
 
         self.graph = plot_widget
         self.graph_type = graph_type
@@ -141,7 +142,7 @@ class Graph:
         self.class_bars = []
 
         # Graphs that need the play_line or interval lines
-        if self.graph_type in ['class', 'joint', 'state']:
+        if self.graph_type in ['class', 'data', 'state']:
             if self.kwargs['interval_lines']:
                 self.start_line = pg.InfiniteLine(0, label='start', labelOpts={'anchors': [(1, 1.5), (0, 1.5)]})
                 self.graph.addItem(self.start_line)
@@ -171,7 +172,7 @@ class Graph:
                 self.graph.addItem(label)
             self.graph.setXRange(0, len(g.attributes), padding=0.02)
 
-        if self.graph_type == 'joint':
+        if self.graph_type == 'data':
             self.graph.getAxis('left').setLabel(text=self.kwargs['label'],
                                                 units=self.kwargs['unit'])
             self.graph.getAxis('left').enableAutoSIPrefix(self.kwargs['AutoSIPrefix'])
@@ -190,6 +191,13 @@ class Graph:
                 self.graph.getAxis('left').setLabel(text='States', units='')
             self.graph.setYRange(0, len(g.states) + 1, padding=0)
 
+        if self.graph_type == 'histogram':
+            if 'label' in self.kwargs.keys():
+                self.graph.getAxis('left').setLabel(text=self.kwargs['label'], units='')
+            # self.graph.setXRange(0, g.data.number_samples, padding=0.02)
+            # self.graph.plot([0, 1], [0],  # pen=(127, 127, 127, 255), brush=(200, 200, 200, 100),
+            #         stepMode=True, fillLevel=0, fillOutline=True)
+
     def update_frame_lines(self, start=None, end=None, play=None):
         """Updates the framelines of the graph
         
@@ -206,13 +214,23 @@ class Graph:
     def update_plot(self, plot_data):
         """Updates Data for plotting on the graph.
         
-        Should only be used with joint graphs
+        Should only be used with data graphs
         """
 
         if plot_data is not None:
             self.graph.listDataItems()[0].setData(plot_data)
         else:
             self.graph.listDataItems()[0].setData([], [])
+
+    def update_histogram(self, x, y):
+        """Updates Histogram for plotting on the graph.
+
+        Should only be used with histogram graphs
+        """
+        self.setup()
+        if x is not None and y is not None:
+            self.graph.plot(x, y,  # pen=(127, 127, 127, 255), brush=(200, 200, 200, 100),
+                            stepMode=True, fillLevel=0, fillOutline=True)
 
     def add_class(self, start, end, class_index, attributes):
         """Adds a class window to the graph.

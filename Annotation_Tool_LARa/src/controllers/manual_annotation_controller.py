@@ -68,12 +68,12 @@ class ManualAnnotationController(Controller):
             self.class_graph = Graph(self.class_graph, 'class',
                                      interval_lines=True)
 
-            # Joint graphs need kwargs: 'label','unit','AutoSIPrefix','number_samples'
+            # Data graphs need kwargs: 'label','unit','AutoSIPrefix','number_samples'
             label = ['RX', 'RY', 'RZ', 'TX', 'TY', 'TZ']
             unit = ['deg', 'deg', 'deg', 'mm', 'mm', 'mm']
             AutoSIPrefix = [False, False, False, True, True, True]
             for i in range(6):
-                self.joint_graphs[i] = Graph(self.joint_graphs[i], 'joint',
+                self.joint_graphs[i] = Graph(self.joint_graphs[i], 'data',
                                              label=label[i],
                                              unit=unit[i],
                                              AutoSIPrefix=AutoSIPrefix[i],
@@ -235,7 +235,7 @@ class ManualAnnotationController(Controller):
     def get_start_frame(self):
         return int(self.start_line_edit.text())
 
-    def revision_mode(self, enable: bool):
-        # Controller.revision_mode(self, enable)
+    def fixed_windows_mode(self, enable: bool):
+        # Controller.fixed_windows_mode(self, enable)
         self.revision_mode_enabled = enable
         self.save_labels_button.setEnabled(not enable)

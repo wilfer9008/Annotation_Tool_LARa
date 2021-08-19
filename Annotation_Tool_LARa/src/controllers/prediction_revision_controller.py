@@ -113,8 +113,7 @@ class PredictionRevisionController(Controller):
             self.use_predictions_button.setEnabled(False)
 
     def new_frame(self, frame):
-        classgraphs = [self.class_graph_0, self.class_graph_1, \
-                       self.class_graph_2, self.class_graph_3]
+        classgraphs = [self.class_graph_0, self.class_graph_1, self.class_graph_2, self.class_graph_3]
         for graph in classgraphs:
             graph.update_frame_lines(play=frame)
 
@@ -236,7 +235,7 @@ class PredictionRevisionController(Controller):
         self.class_graph_2.color_class_bars(colors)
         self.class_graph_3.color_class_bars(colors)
 
-        if self.revision_mode_enabled:
+        if self.fixed_window_mode_enabled:
             colors = Controller.highlight_class_bar(self, bar_index)
             self.class_graph_0.color_class_bars(colors)
         else:
@@ -245,20 +244,22 @@ class PredictionRevisionController(Controller):
 
     def use_predictions(self):
 
-        message = "This action will enable revision mode.\n\
+        message = "This action will enable fixed-window-size mode.\n\
 Any labeling done up to this point will be discarded and instead the first prediction will be used.\n\
-Some features in other modes will be disabled until revision mode is disabled again.\n\
+Some features in other modes will be disabled until fixed-window-size mode is disabled again.\n\
 You can choose between the top3 classes in here or change the labels in label correction mode."
 
         revision_mode_warning = QtWidgets.QMessageBox.question(
-            self.gui, 'Start revision mode?', message,
+            self.gui, 'Start fixed-window-size mode?', message,
             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.Cancel,
             QtWidgets.QMessageBox.Cancel)
 
         if revision_mode_warning == QtWidgets.QMessageBox.Yes:
-            self.gui.revision_mode(True)
+            g.windows.windows = [(s, e, c, [a for a in A]) for (s, e, c, A) in g.windows.windows_1]
+            g.windows.make_backup()
+            self.gui.fixed_windows_mode(True)
 
-    def disable_revision_mode(self):
+    def disable_fixed_window_mode(self):
         message = "This will disable revision mode.\n\
 Make sure you are finished everything you need to do in this mode.\n\
 Next time you activate revision mode your unsaved progress will be lost"
@@ -269,10 +270,10 @@ Next time you activate revision mode your unsaved progress will be lost"
             QtWidgets.QMessageBox.Cancel)
 
         if revision_mode_warning == QtWidgets.QMessageBox.Yes:
-            self.gui.revision_mode(False)
+            self.gui.fixed_windows_mode(False)
 
-    def revision_mode(self, enable: bool):
-        self.revision_mode_enabled = enable
+    def fixed_windows_mode(self, enable: bool):
+        self.fixed_window_mode_enabled = enable
 
         self.choose_first_button.setEnabled(enable)
         self.choose_second_button.setEnabled(enable)
@@ -281,10 +282,8 @@ Next time you activate revision mode your unsaved progress will be lost"
         self.set_all_error_button.setEnabled(enable)
 
         if enable:
-            g.windows.windows = [(s, e, c, [a for a in A]) for (s, e, c, A) in g.windows.windows_1]
-            g.windows.make_backup()
             self.use_predictions_button.clicked.disconnect()
-            self.use_predictions_button.clicked.connect(lambda _: self.disable_revision_mode())
+            self.use_predictions_button.clicked.connect(lambda _: self.disable_fixed_window_mode())
             self.use_predictions_button.setText("Stop revision mode")
 
         else:
@@ -307,7 +306,7 @@ Next time you activate revision mode your unsaved progress will be lost"
 
         # prediction[self.current_window][3][-1] = 1 - prediction[self.current_window][3][-1]
         g.windows.windows[self.current_window][3][-1] = 1 \
-                                                     - g.windows.windows[self.current_window][3][-1]
+                                                        - g.windows.windows[self.current_window][3][-1]
 
         self.reload()
 

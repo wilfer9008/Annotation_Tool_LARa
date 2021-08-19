@@ -15,8 +15,8 @@ from controllers.controller import Graph
 
 
 class DenseSlidingWindowDataset(SlidingWindowDataset):
-    def __init__(self, data: np.array, window_length: int):
-        super(DenseSlidingWindowDataset, self).__init__(data, window_length, window_step=100)
+    def __init__(self, data: np.array, window_length: int, window_step: int):
+        super(DenseSlidingWindowDataset, self).__init__(data, window_length, window_step)
         length = super(DenseSlidingWindowDataset, self).__len__()
 
         self.classes = np.zeros((length, len(g.classes)), dtype=float) - 1
@@ -341,11 +341,11 @@ class Annotator:
 
     def run(self):
         # Segment Data
-        print(f"Segmenting data: 0/{1 + len(self.paths)}")
+        #print(f"Segmenting data: 0/{1 + len(self.paths)}")
 
         window_length = self.config['sliding_window_length']
-        dataset = DenseSlidingWindowDataset(g.data.mocap_data, window_length)
-        print(f"Segmenting data: 1/{1 + len(self.paths)}")
+        dataset = DenseSlidingWindowDataset(g.data.mocap_data, window_length, window_step=window_length)
+        #print(f"Segmenting data: 1/{1 + len(self.paths)}")
 
         # Making deep representation
         if self.deep_rep:
@@ -353,11 +353,11 @@ class Annotator:
             deep_rep = self.get_deep_representations(self.paths, self.config, self.network)
         else:
             deep_rep = None
-        print(f"Segmented data\n")
+        #print(f"Segmented data\n")
 
         # Forward through network
 
-        print(f"Annotating. Total samples: {len(dataset)}")
+        #print(f"Annotating. Total samples: {len(dataset)}")
         label_kind = self.config['labeltype']
         percentiles = range(0, len(dataset), len(dataset)//10)
         for i in range(len(dataset)):
@@ -377,14 +377,15 @@ class Annotator:
                 raise ValueError(f"labeltype of the network has to be either 'class' or 'attributes'. "
                                  f"It was '{label_kind}'")
             if i in percentiles:
-                print(f"Annotating {i + 1}/{len(dataset)}")
+                # print(f"Annotating {i + 1}/{len(dataset)}")
+                pass
 
         # dataset.attributes = dataset.ground_truth
         # print("Skipped Annotation using ground truth")
-        print("Annotated\n")
+        #print("Annotated\n")
 
         # Evaluate results
-        print("Evaluating")
+        #print("Evaluating")
         if self.deep_rep:
             deep_rep.predict_labels_from_fc2()
 
@@ -394,7 +395,7 @@ class Annotator:
         metric = "cosine"
         dataset.predict_classes_from_attributes(metric)
         dataset.predict_attribute_reps(metric)
-        print("Evaluated\n")
+        #print("Evaluated\n")
 
 
         """
