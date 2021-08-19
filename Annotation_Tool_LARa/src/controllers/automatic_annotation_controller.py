@@ -109,7 +109,7 @@ class AutomaticAnnotationController(Controller):
     def enable_load_button(self):
         if self.selected_network > 0 \
                 and self.enabled \
-                and not self.fixed_window_mode_enabled:
+                and self.fixed_window_mode_enabled in [None, "none"]:
             directory = g.settings['saveFinishedPath']
             annotator_id = g.networks[self.selected_network]['annotator_id']
 
