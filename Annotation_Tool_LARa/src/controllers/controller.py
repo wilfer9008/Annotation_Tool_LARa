@@ -222,7 +222,7 @@ class Graph:
         else:
             self.graph.listDataItems()[0].setData([], [])
 
-    def update_histogram(self, x, y):
+    def update_histogram(self, x, y, range=None):
         """Updates Histogram for plotting on the graph.
 
         Should only be used with histogram graphs
@@ -231,6 +231,8 @@ class Graph:
         if x is not None and y is not None:
             self.graph.plot(x, y,  # pen=(127, 127, 127, 255), brush=(200, 200, 200, 100),
                             stepMode=True, fillLevel=0, fillOutline=True)
+        if range is not None:
+            self.graph.setXRange(range[0], range[1])
 
     def add_class(self, start, end, class_index, attributes):
         """Adds a class window to the graph.

@@ -20,6 +20,7 @@ class RetrievalController(Controller):
         super(RetrievalController, self).__init__(gui)
 
         self.retrieved_list = []
+        self.not_filtered_range = (0, 1)  # Used for the distance histogram
 
         self.setup_widgets()
 
@@ -158,7 +159,7 @@ class RetrievalController(Controller):
                     x_values = x_values[discard_min:-discard_max]
                     y_values = y_values[discard_min:-discard_max]
 
-                self.distance_histogram.update_histogram(x_values, y_values)
+                self.distance_histogram.update_histogram(x_values, y_values, self.not_filtered_range)
             else:
 
                 # if one retrieved list becomes empty other may still have windows left
@@ -313,6 +314,8 @@ class RetrievalController(Controller):
 
     def change_query(self, class_index: int):
         self.retrieved_list = g.retrieval.retrieve_list(class_index)
+        values = sorted([item["value"] for item in self.retrieved_list])
+        self.not_filtered_range = (values[0], values[-1])
         self.retrieved_list = g.retrieval.filter_not_none_class(self.retrieved_list, class_index)
         self.reload()
 
