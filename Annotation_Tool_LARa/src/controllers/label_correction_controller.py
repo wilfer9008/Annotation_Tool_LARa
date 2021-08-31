@@ -33,7 +33,7 @@ class LabelCorrectionController(Controller):
 
         # ----Scrollbars----
         self.scrollBar = self.widget.findChild(QtWidgets.QScrollBar, "lc_scrollBar")
-        self.scrollBar.valueChanged.connect(self.selectWindow)
+        self.scrollBar.valueChanged.connect(self.select_window)
 
         # ----LineEdits----
         # self. = self.widget.get_widget(QtWidgets.QLineEdit,"")
@@ -134,7 +134,7 @@ class LabelCorrectionController(Controller):
         if g.windows is not None and len(g.windows.windows) > 0:
             self.set_enabled(True)
             self.select_window_by_frame()
-            self.selectWindow(self.current_window)
+            self.select_window(self.current_window)
 
         else:
             self.set_enabled(False)
@@ -154,8 +154,8 @@ class LabelCorrectionController(Controller):
         # print("lcm.set_enabled:",\
         #      "\n\t self.enabled:",self.enabled,\
         #      "\n\t enable:",enable,\
-        #      "\n\t revision:",self.revision_mode_enabled)
-        if self.revision_mode_enabled:
+        #      "\n\t revision:",self.fixed_window_mode_enabled)
+        if not (self.fixed_window_mode_enabled is None or self.fixed_window_mode_enabled == "none"):
             self.split_at_lineEdit.setEnabled(False)
             self.move_start_lineEdit.setEnabled(False)
             self.move_end_lineEdit.setEnabled(False)
@@ -206,7 +206,7 @@ class LabelCorrectionController(Controller):
 
             self.scrollBar.setEnabled(enable)
 
-    def selectWindow(self, window_index: int):
+    def select_window(self, window_index: int):
         """Selects the window at window_index"""
         if window_index >= 0:
             self.current_window = window_index
@@ -226,7 +226,7 @@ class LabelCorrectionController(Controller):
         for button, checked in zip(self.attributeButtons, window[3]):
             button.setChecked(checked)
 
-        if self.revision_mode_enabled:
+        if self.fixed_window_mode_enabled == "prediction_revision":
             # print(window_index, len(g.windows.windows_1))
             top_buttons = [g.windows.windows_1[window_index][2],
                            g.windows.windows_2[window_index][2],
@@ -254,7 +254,7 @@ class LabelCorrectionController(Controller):
         if self.enabled and (self.current_window != window_index):
             self.current_window = window_index
             self.highlight_class_bar(window_index)
-            self.selectWindow(window_index)
+            self.select_window(window_index)
 
     def update_frame_lines(self, play=None):
         self.class_graph.update_frame_lines(play=play)
@@ -272,7 +272,7 @@ class LabelCorrectionController(Controller):
         if self.current_window != window_index:
             self.current_window = window_index
             # self.reload()
-            self.selectWindow(window_index)
+            self.select_window(window_index)
         else:
             self.current_window = window_index
 
@@ -442,10 +442,10 @@ class LabelCorrectionController(Controller):
             return g.windows.windows[self.current_window][0] + 1
         return 1
 
-    def revision_mode(self, enable: bool):
-        self.revision_mode_enabled = enable
+    def fixed_windows_mode(self, mode: str):
+        self.fixed_window_mode_enabled = mode
 
-        if not enable:
+        if mode is None or mode == "none":
             for i, name in enumerate(g.classes):
                 self.classButtons[i].setText(name)
 

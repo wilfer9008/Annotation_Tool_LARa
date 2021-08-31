@@ -14,7 +14,7 @@ import os
 import numpy as np
 from network import Network
 from data_management import LabeledSlidingWindowDataset, \
-    DeepRepresentationDataset
+    DeepRepresentationDataset, RetrievalData
 import time
 
 import global_variables as g
@@ -99,7 +99,8 @@ class AutomaticAnnotationController(Controller):
     def enable_annotate_button(self):
         if self.selected_network > 0 \
                 and self.enabled \
-                and not self.revision_mode_enabled:
+                and (self.fixed_window_mode_enabled is None
+                     or self.fixed_window_mode_enabled == "none"):
             self.annotate_button.setEnabled(True)
         else:
             self.annotate_button.setEnabled(False)
@@ -108,7 +109,7 @@ class AutomaticAnnotationController(Controller):
     def enable_load_button(self):
         if self.selected_network > 0 \
                 and self.enabled \
-                and not self.revision_mode_enabled:
+                and self.fixed_window_mode_enabled in [None, "none"]:
             directory = g.settings['saveFinishedPath']
             annotator_id = g.networks[self.selected_network]['annotator_id']
 
@@ -123,7 +124,6 @@ class AutomaticAnnotationController(Controller):
                 self.load_predictions_button.setEnabled(True)
             else:
                 self.load_predictions_button.setEnabled(False)
-
         else:
             self.load_predictions_button.setEnabled(False)
 
@@ -158,7 +158,6 @@ class AutomaticAnnotationController(Controller):
             self.deep_rep_checkBox.setEnabled(False)
         elif self.deep_rep_files:
             self.deep_rep_checkBox.setEnabled(True)
-
 
         self.enable_annotate_button()
         self.enable_load_button()
@@ -208,6 +207,11 @@ class AutomaticAnnotationController(Controller):
     def load_predictions(self):
         g.windows.load_predictions(g.settings['saveFinishedPath'],
                                    g.networks[self.selected_network]['annotator_id'])
+
+        directory = g.settings['saveFinishedPath']
+        annotator_id = g.networks[self.selected_network]['annotator_id']
+        g.retrieval = RetrievalData.load_retrieval(directory, annotator_id)
+
         self.reload()
         # print("windows_1: ", g.windows.windows_1)
         # print("windows_2: ", g.windows.windows_2)
@@ -296,9 +300,9 @@ class AutomaticAnnotationController(Controller):
         self.class_graph_2.color_class_bars(colors)
         self.class_graph_3.color_class_bars(colors)
 
-    def revision_mode(self, enable: bool):
-        # Controller.revision_mode(self, enable)
-        self.revision_mode_enabled = enable
+    def fixed_windows_mode(self, mode: str):
+        # Controller.fixed_windows_mode(self, enable)
+        self.fixed_window_mode_enabled = mode
 
         self.enable_annotate_button()
         self.enable_load_button()
@@ -358,7 +362,7 @@ class Annotator(QThread):
 
         self.selected_network = selected_network
         self.network = None
-        self.window_step = g.settings['segmentationWindowStride']
+        # self.window_step = g.settings['segmentationWindowStride']
         self.device = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
 
     def load_network(self, index):
@@ -404,7 +408,9 @@ class Annotator(QThread):
         # Segment Data
         window_length = config['sliding_window_length']
 
-        dataset = LabeledSlidingWindowDataset(g.data.mocap_data, window_length, self.window_step)
+        dataset = LabeledSlidingWindowDataset(g.data.mocap_data, window_length, window_step=window_length)
+        if config['labeltype'] == 'attributes':
+            g.retrieval = RetrievalData(g.data.mocap_data, window_length, window_step=window_length)
         self.progress_add.emit(1)
         # Making deep representation
         if self.deep_rep:
@@ -428,6 +434,7 @@ class Annotator(QThread):
             elif label_kind == 'attributes':
                 label = label.detach()
                 dataset.save_labels(i, label[0], label_kind)
+                g.retrieval.save_labels(i, label[0], label_kind)
             else:
                 raise Exception
             self.progress.emit(i)
@@ -442,8 +449,7 @@ class Annotator(QThread):
         else:
             metrics = None
 
-        windows_1, windows_2, windows_3 = dataset.make_windows(
-            label_kind, metrics, deep_rep)
+        windows_1, windows_2, windows_3 = dataset.make_windows(label_kind, metrics, deep_rep)
 
         # Save windows
         self.nextstep.emit("saving", 1)
@@ -451,6 +457,8 @@ class Annotator(QThread):
         g.windows.windows_2 = windows_2
         g.windows.windows_3 = windows_3
         g.windows.save_predictions(g.settings['saveFinishedPath'],
+                                   g.networks[self.selected_network]['annotator_id'])
+        g.retrieval.save_retrieval(g.settings['saveFinishedPath'],
                                    g.networks[self.selected_network]['annotator_id'])
 
         self.nextstep.emit("done", 0)
