@@ -209,7 +209,7 @@ class Graph:
         
         Cannot be used with attribute graphs
         """
-        if ('interval_lines', True) in self.kwargs:
+        if ('interval_lines', True) in self.kwargs.items():
             if start is not None:
                 self.start_line.setValue(start)
             if end is not None:
