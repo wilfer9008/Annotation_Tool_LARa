@@ -210,8 +210,11 @@ class RetrievalController(Controller):
 
     def get_start_frame(self):
         if self.retrieved_list:
-            s, _ = self.retrieved_list[0]["range"]
-            return max(0, s - int(self.before_lineEdit.text()))
+            s, e = self.retrieved_list[0]["range"]
+            if self.gui.playback_controller.speed > 0:
+                return max(0, s - int(self.before_lineEdit.text()))
+            else:
+                return min(g.data.number_samples - 1, e + int(self.after_lineEdit.text()))-1
         else:
             return 0
 
