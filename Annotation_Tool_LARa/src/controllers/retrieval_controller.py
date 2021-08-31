@@ -83,10 +83,12 @@ class RetrievalController(Controller):
 
         self.class_graph = Graph(plot_widget=self.class_graph, graph_type="class", label="Classes", interval_lines=True)
         self.class_graph.setup()
-        self.distance_graph = Graph(self.distance_graph, 'data', label="distance", interval_lines=True,
-                                    unit="", AutoSIPrefix=False)
+
+        self.distance_graph = Graph(self.distance_graph, 'data', label="score", interval_lines=True,
+                                    unit="", AutoSIPrefix=False, y_range=(0, 1))
         self.distance_graph.setup()
-        self.distance_histogram = Graph(self.distance_histogram, "histogram", label="histogram")
+
+        self.distance_histogram = Graph(self.distance_histogram, "histogram", label="histogram", play_line=True)
         self.distance_histogram.setup()
 
         self.reload()
@@ -160,6 +162,7 @@ class RetrievalController(Controller):
                     y_values = y_values[discard_min:-discard_max]
 
                 self.distance_histogram.update_histogram(x_values, y_values, self.not_filtered_range)
+                self.distance_histogram.update_frame_lines(play=self.retrieved_list[0]["value"])
             else:
 
                 # if one retrieved list becomes empty other may still have windows left
@@ -328,6 +331,7 @@ class RetrievalController(Controller):
         g.retrieval.remove_suggestion(self.retrieved_list[0], None)
         self.change_attributes()  # Change attributes as seen on gui
         self.retrieved_list.pop(0)
+        self.retrieved_list = g.retrieval.prioritize_neighbors(self.retrieved_list, index)
         self.reload()
 
     def reject_suggestion(self):

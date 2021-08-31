@@ -1424,6 +1424,17 @@ class RetrievalData:
     def reset_filter(self):
         self.suggestion_filter = np.ones((len(self), len(g.classes)))
 
+    def prioritize_neighbors(self, retrieval_list: list, index: int):
+        neighbors = []
+        for suggestion in retrieval_list:
+            if abs(suggestion["index"] - index) == 1:
+                neighbors.append(suggestion)
+        neighbors.sort(key=lambda x: x["value"], reverse=True)
+        for i, neighbor in enumerate(neighbors):
+            retrieval_list.remove(neighbors[i])
+            retrieval_list.insert(i, neighbors[i])
+        return retrieval_list
+
     def add_dataset(self, dataset):
         if type(self) != type(dataset):
             raise TypeError(f"Datasets have to be the same type. {type(self)} and {type(dataset)}")
@@ -1451,7 +1462,7 @@ class RetrievalData:
 
         file_name = f"{g.windows.file_name.split('.')[0]}_A{annotator_id:0>2}_retrieval.txt"
         path = directory + os.sep + file_name
-        dill.dump(self, open(path,"wb"))
+        dill.dump(self, open(path, "wb"))
 
     @staticmethod
     def load_retrieval(directory: str, annotator_id: int):
@@ -1470,4 +1481,4 @@ class RetrievalData:
         path = directory + os.sep + file_name
         if not os.path.exists(path):
             return None
-        return dill.load(open(path,"rb"))
+        return dill.load(open(path, "rb"))

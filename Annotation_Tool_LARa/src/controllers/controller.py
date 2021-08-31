@@ -115,7 +115,7 @@ class Graph:
         graph_type: 'data','class','attribute'
         
         kwargs = {'label','unit','AutoSIPrefix',interval_lines,
-                  'number_classes'}
+                  'number_classes', 'y_range', 'play_line'}
         
         """
 
@@ -194,16 +194,22 @@ class Graph:
         if self.graph_type == 'histogram':
             if 'label' in self.kwargs.keys():
                 self.graph.getAxis('left').setLabel(text=self.kwargs['label'], units='')
-            # self.graph.setXRange(0, g.data.number_samples, padding=0.02)
-            # self.graph.plot([0, 1], [0],  # pen=(127, 127, 127, 255), brush=(200, 200, 200, 100),
-            #         stepMode=True, fillLevel=0, fillOutline=True)
+
+            if ('play_line', True) in self.kwargs.items():
+                self.play_line = pg.InfiniteLine(0, pen=mkPen(0, 255, 0, 127))
+                self.graph.addItem(self.play_line)
+
+
+        if "y_range" in self.kwargs.keys():
+            min_, max_ = self.kwargs["y_range"]
+            self.graph.setYRange(min_, max_)
 
     def update_frame_lines(self, start=None, end=None, play=None):
         """Updates the framelines of the graph
         
         Cannot be used with attribute graphs
         """
-        if self.kwargs['interval_lines']:
+        if ('interval_lines', True) in self.kwargs:
             if start is not None:
                 self.start_line.setValue(start)
             if end is not None:
