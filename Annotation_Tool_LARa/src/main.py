@@ -510,6 +510,7 @@ class IOController:
 
         if not network_folder_exists:
             os.mkdir(g.networks_path)
+
             with open(f"{g.networks_path}{os.sep}readme.txt", "wt") as txt:
                 txt.write("Networks are available in:\n")
                 txt.write("https://tu-dortmund.sciebo.de/s/YkpqlYOffFrmFr0\n\n")
