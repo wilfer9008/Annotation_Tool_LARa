@@ -15,6 +15,21 @@ import pyqtgraph as pg
 from controllers.controller import Graph
 
 
+def mergeable(window_index_a: int, window_index_b: int) -> bool:
+    """Checks whether two windows can be merged
+
+    window_index_a should be smaller than window_index_b
+    """
+    if (window_index_a + 1 == window_index_b) and (window_index_a >= 0) and (
+            window_index_b < len(g.windows.windows)):
+        window_a = g.windows.windows[window_index_a]
+        window_b = g.windows.windows[window_index_b]
+        if window_a[2] == window_b[2]:
+            a_and_b = [a == b for a, b in zip(window_a[3], window_b[3])]
+            return reduce(lambda a, b: a and b, a_and_b)
+    return False
+
+
 class LabelCorrectionController(Controller):
     def __init__(self, gui):
         super(LabelCorrectionController, self).__init__(gui)
@@ -79,14 +94,14 @@ class LabelCorrectionController(Controller):
         self.window_by_frame_button.clicked.connect(lambda _: self.select_window_by_frame())
 
         # ----Class buttons----
-        self.classButtons = [QtWidgets.QRadioButton(text) for text in g.classes]
+        self.class_buttons = [QtWidgets.QRadioButton(text) for text in g.classes]
         self.class_layout = self.widget.findChild(QtWidgets.QGroupBox, "classesGroupBox").layout()
 
-        for button in self.classButtons:
+        for button in self.class_buttons:
             button.setEnabled(False)
-            button.toggled.connect(lambda _: self.move_buttons(self.class_layout, self.classButtons))
-            button.clicked.connect(lambda _: self.changeClass())
-        self.move_buttons(self.class_layout, self.classButtons)
+            button.toggled.connect(lambda _: self.move_buttons(self.class_layout, self.class_buttons))
+            button.clicked.connect(lambda _: self.change_class())
+        self.move_buttons(self.class_layout, self.class_buttons)
 
         # ----Attribute buttons----
         self.attributeButtons = [QtWidgets.QCheckBox(text) for text in g.attributes]
@@ -95,10 +110,10 @@ class LabelCorrectionController(Controller):
         for button in self.attributeButtons:
             button.setEnabled(False)
             button.toggled.connect(lambda _: self.move_buttons(layout2, self.attributeButtons))
-            button.clicked.connect(lambda _: self.changeAttributes())
+            button.clicked.connect(lambda _: self.change_attributes())
         self.move_buttons(layout2, self.attributeButtons)
 
-        # ----Classgraph-----------
+        # ----Class graph-----------
         self.class_graph = self.widget.findChild(pg.PlotWidget, 'lc_classGraph')
 
         # ----Status windows-------
@@ -197,7 +212,7 @@ class LabelCorrectionController(Controller):
             # Therefore setting the current window to 0 as this mode is enabled
             # as soon as there is at least one window
             self.enabled = enable
-            for button in self.classButtons:
+            for button in self.class_buttons:
                 button.setEnabled(enable)
             for button in self.attributeButtons:
                 button.setEnabled(enable)
@@ -222,7 +237,7 @@ class LabelCorrectionController(Controller):
         self.start_lineEdit.setText(str(window[0] + 1))
         self.end_lineEdit.setText(str(window[1] + 1))
 
-        self.classButtons[window[2]].setChecked(True)
+        self.class_buttons[window[2]].setChecked(True)
         for button, checked in zip(self.attributeButtons, window[3]):
             button.setChecked(checked)
 
@@ -233,17 +248,17 @@ class LabelCorrectionController(Controller):
                            g.windows.windows_3[window_index][2]]
             for i, name in enumerate(g.classes):
                 if i == top_buttons[0]:
-                    self.classButtons[i].setText(name + " (#1)")
+                    self.class_buttons[i].setText(name + " (#1)")
                 elif i == top_buttons[1]:
-                    self.classButtons[i].setText(name + " (#2)")
+                    self.class_buttons[i].setText(name + " (#2)")
                 elif i == top_buttons[2]:
-                    self.classButtons[i].setText(name + " (#3)")
+                    self.class_buttons[i].setText(name + " (#3)")
                 else:
-                    self.classButtons[i].setText(name)
+                    self.class_buttons[i].setText(name)
 
         self.highlight_class_bar(window_index)
 
-    def highlight_class_bar(self, bar_index):
+    def highlight_class_bar(self, bar_index, **kwargs):
         colors = Controller.highlight_class_bar(self, bar_index)
 
         self.class_graph.color_class_bars(colors)
@@ -276,23 +291,9 @@ class LabelCorrectionController(Controller):
         else:
             self.current_window = window_index
 
-    def mergeable(self, window_index_a: int, window_index_b: int) -> bool:
-        """Checks whether two windows can be merged
-        
-        window_index_a should be smaller than window_index_b
-        """
-        if (window_index_a + 1 == window_index_b) and (window_index_a >= 0) and (
-                window_index_b < len(g.windows.windows)):
-            window_a = g.windows.windows[window_index_a]
-            window_b = g.windows.windows[window_index_b]
-            if window_a[2] == window_b[2]:
-                a_and_b = [a == b for a, b in zip(window_a[3], window_b[3])]
-                return reduce(lambda a, b: a and b, a_and_b)
-        return False
-
     def merge(self, window_index_a: int, window_index_b: int, check_mergeable=True, reload=True):
         """Tries to merge two windows"""
-        if not check_mergeable or self.mergeable(window_index_a, window_index_b):
+        if not check_mergeable or mergeable(window_index_a, window_index_b):
             window_b = g.windows.windows[window_index_b]
             g.windows.change_window(window_index_a, end=window_b[1], save=False)
             g.windows.delete_window(window_index_b, save=True)
@@ -305,7 +306,7 @@ class LabelCorrectionController(Controller):
     def merge_all_adjacent(self):
         """Tries to merge all mergeable adjacent windows"""
         for i in range(len(g.windows.windows)):
-            while self.mergeable(i, i + 1):
+            while mergeable(i, i + 1):
                 self.merge(i, i + 1, False, False)
         self.reload()
 
@@ -394,15 +395,15 @@ class LabelCorrectionController(Controller):
             else:
                 self.add_status_message("A window can't end before if started.")
 
-    def changeClass(self):
-        for i, button in enumerate(self.classButtons):
+    def change_class(self):
+        for i, button in enumerate(self.class_buttons):
             if button.isChecked():
                 g.windows.change_window(self.current_window, class_index=i, save=True)
         # self.reload()
         self.class_graph.reload_classes(g.windows.windows)
-        self.highlight_class_bar(self.current_window)
+        self.highlight_class_bar(self.current_window, )
 
-    def changeAttributes(self):
+    def change_attributes(self):
         """Looks which Attribute buttons are checked and saves that to the current window"""
 
         attributes = []
@@ -447,6 +448,6 @@ class LabelCorrectionController(Controller):
 
         if mode is None or mode == "none":
             for i, name in enumerate(g.classes):
-                self.classButtons[i].setText(name)
+                self.class_buttons[i].setText(name)
 
         self.reload()
