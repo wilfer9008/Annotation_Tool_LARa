@@ -5,8 +5,10 @@ Created on 22.11.2019
 @email: Erik.Altermann@tu-dortmund.de
 
 """
+import math
 import os
 
+import dill
 import numpy as np
 import torch
 from sklearn.metrics.pairwise import cosine_similarity
@@ -1232,3 +1234,251 @@ class DeepRepresentationDataset(SlidingWindowDataset):
             sorted_classes = [sorted_classes[index] for index in sorted(indexes)]
             self.classes[i] = sorted_classes[:3]
 
+
+class RetrievalData:
+    def __init__(self, data: np.array, window_length: int, window_step: int):
+        self.window_length = window_length
+        self.window_step = window_step
+        self.length = int((data.shape[0] - self.window_length) / self.window_step) + 1
+
+        self.attributes = np.zeros((len(self), len(g.attributes)), dtype=float) - 1
+        self.classes = None
+        self.attribute_rep_queries = None
+
+        self.suggestion_filter = np.ones((len(self), len(g.classes)))
+
+    def __len__(self):
+        return self.length
+
+    def __range__(self, segment_index):
+        """Returns the range of the segment at segment_index
+
+        Arguments:
+        ----------
+        segment_index : int
+            index of the segment, whose range will be returned
+        ----------
+
+        Returns:
+        ----------
+        range : 2-tuple
+            (lowerbound,upperbound)
+        ----------
+        """
+
+        # if segment_index < self.__len__():
+        lowerbound = self.window_step * segment_index
+        upperbound = lowerbound + self.window_length
+        # else:
+        #    upperbound = self.data.shape[2]
+        #    lowerbound = upperbound - self.window_length
+        return lowerbound, upperbound
+
+    def save_labels(self, index, label, label_kind):
+        if label_kind == 'attributes':
+            self.attributes[index, :] = label
+        else:
+            raise ValueError("Retrieval only works on Attributes")
+
+    def make_heatmap(self, class_index, normalize=False):
+        if self.classes is None:
+            raise RuntimeError("self.classes is None. Please run predict_classes_from_attributes first.")
+        if not normalize:
+            return self.classes[:, class_index]
+        heatmap = self.classes[:, class_index]
+        min_ = min(heatmap)
+        max_ = max(heatmap)
+        heatmap = (heatmap - min_) / (max_ - min_)
+        return heatmap
+
+    def make_attr_rep_heatmap(self, attr_rep_index, normalize=False):
+        if self.attribute_rep_queries is None:
+            raise RuntimeError("self.attribute_rep_queries is None. Please run predict_attribute_reps first.")
+        if not normalize:
+            return self.attribute_rep_queries[:, attr_rep_index]
+        heatmap = self.attribute_rep_queries[:, attr_rep_index]
+        min_ = min(heatmap)
+        max_ = max(heatmap)
+        heatmap = (heatmap - min_) / (max_ - min_)
+        return heatmap
+
+    def make_attr_heatmap(self, attr_index, normalize=False):
+        if not normalize:
+            return self.attributes[:, attr_index]
+        heatmap = self.attributes[:, attr_index]
+        min_ = min(heatmap)
+        max_ = max(heatmap)
+        heatmap = (heatmap - min_) / (max_ - min_)
+        return heatmap
+
+    def predict_classes_from_attributes(self, distance="cosine"):
+        attribute_rep = g.attribute_rep[:, 1:]
+
+        distances = None
+
+        if distance == "cosine":
+            distances = cosine_similarity(self.attributes, attribute_rep)
+        elif distance == "bce":
+            attributes = torch.from_numpy(self.attributes)
+            attribute_rep = torch.from_numpy(attribute_rep)
+            bceloss = torch.nn.BCELoss()
+            distances = np.ones((attributes.shape[0], attribute_rep.shape[0]))
+            for i in range(attributes.shape[0]):
+                for j in range(attribute_rep.shape[0]):
+                    distances[i, j] -= bceloss(attributes[i], attribute_rep[j]).item() / 100
+        else:
+            ValueError(f"Supported distances are 'cosine' and 'bce'. But '{distance}' was given.")
+
+        sorted_distances_indexes = np.argsort(1 - distances, 1)
+
+        self.classes = np.zeros((len(self), len(g.classes)), dtype=float) - 1
+
+        for i in range(len(self)):
+            # print(f"Evaluation: {i + 1}/{len(self)}")
+
+            sorted_classes = g.attribute_rep[sorted_distances_indexes[i], 0]
+            sorted_distances = distances[i, sorted_distances_indexes[i, :]]
+
+            # First occurrence (index) of each class. np.unique is sorted by class not by index.
+            indexes = np.unique(sorted_classes, return_index=True)[1]
+            # Get the distance
+            self.classes[i] = np.array(sorted_distances[indexes])
+
+    def predict_attribute_reps(self, distance="cosine"):
+        attribute_rep = g.attribute_rep[:, 1:]
+
+        if distance == "cosine":
+            self.attribute_rep_queries = cosine_similarity(self.attributes, attribute_rep)
+
+        elif distance == "bce":
+            attributes = torch.from_numpy(self.attributes)
+            attribute_rep = torch.from_numpy(attribute_rep)
+            bceloss = torch.nn.BCELoss()
+            self.attribute_rep_queries = np.zeros((attributes.shape[0], attribute_rep.shape[0]))
+            for i in range(attributes.shape[0]):
+                for j in range(attribute_rep.shape[0]):
+                    self.attribute_rep_queries[i, j] = bceloss(attributes[i], attribute_rep[j]).item() / 100
+            self.attribute_rep_queries = 1 - self.attribute_rep_queries
+        else:
+            ValueError(f"Supported distances are 'cosine' and 'bce'. But '{distance}' was given.")
+
+    def retrieve_list(self, class_index, length=None):
+        retrieval_list = []
+        heatmap = self.make_heatmap(class_index, False)
+
+        indexes = np.argsort(1 - heatmap)  # 1- Because np.argsort sorts in ascending order
+        if length is not None and length < len(indexes):
+            indexes = indexes[:length]
+        for i in indexes:
+            retrieval_list.append({"range": self.__range__(i), "index": i, "value": heatmap[i]})
+        return retrieval_list
+
+    def retrieve_attr_rep_list(self, attr_index, length=None):
+        retrieval_list = []
+        heatmap = self.make_attr_rep_heatmap(attr_index, False)
+
+        indexes = np.argsort(1 - heatmap)  # 1- Because np.argsort sorts in ascending order
+        if length is not None and length < len(indexes):
+            indexes = indexes[:length]
+        for i in indexes:
+            retrieval_list.append({"range": self.__range__(i), "index": i, "value": heatmap[i]})
+        return retrieval_list
+
+    def retrieve_attr_list(self, attr_index, length=None):
+        retrieval_list = []
+        heatmap = self.make_attr_heatmap(attr_index, False)
+
+        indexes = np.argsort(1 - heatmap)  # 1- Because np.argsort sorts in ascending order
+        if length is not None and length < len(indexes):
+            indexes = indexes[:length]
+        for i in indexes:
+            retrieval_list.append({"range": self.__range__(i), "index": i, "value": heatmap[i]})
+        return retrieval_list
+
+    def filter_not_none_class(self, retrieval_list, class_index):
+        """Filters out retrieved windows with class None
+
+        Assumes None Class is always the last class"""
+
+        not_none = [item for item in retrieval_list if g.windows.windows[item["index"]][2] != (len(g.classes) - 1)]
+        for suggestion in not_none:
+            index = suggestion["index"]
+            self.suggestion_filter[index, :] = 0
+        return self.apply_filter(retrieval_list, class_index)
+
+    def apply_filter(self, retrieval_list, class_index):
+        class_filter = self.suggestion_filter[:, class_index]
+        return [suggestion for suggestion in retrieval_list if class_filter[suggestion["index"]]]
+
+    def remove_suggestion(self, suggestion: dict, class_index: int):
+        if class_index is None:
+            # When suggestion is accepted it's not None anymore and can be removed everywhere
+            self.suggestion_filter[suggestion["index"], :] = 0
+        elif suggestion is None:
+            # When rejecting all suggestions all suggestions for the entire class can be set to 0
+            self.suggestion_filter[:, class_index] = 0
+        else:
+            # When suggestion is rejected it should only be rejected for a single class
+            self.suggestion_filter[suggestion["index"], class_index] = 0
+
+    def reset_filter(self):
+        self.suggestion_filter = np.ones((len(self), len(g.classes)))
+
+    def prioritize_neighbors(self, retrieval_list: list, index: int):
+        neighbors = []
+        for suggestion in retrieval_list:
+            if abs(suggestion["index"] - index) == 1:
+                neighbors.append(suggestion)
+        neighbors.sort(key=lambda x: x["value"], reverse=True)
+        for i, neighbor in enumerate(neighbors):
+            retrieval_list.remove(neighbors[i])
+            retrieval_list.insert(i, neighbors[i])
+        return retrieval_list
+
+    def add_dataset(self, dataset):
+        if type(self) != type(dataset):
+            raise TypeError(f"Datasets have to be the same type. {type(self)} and {type(dataset)}")
+        if self.window_length != dataset.window_length:
+            raise ValueError(f"window_lengths don't match. {self.window_length} and {dataset.window_length}")
+        if self.window_step != dataset.window_step:
+            raise ValueError(f"window_steps don't match. {self.window_step} and {dataset.window_step}")
+
+        self.classes = np.vstack((self.classes, dataset.classes))
+        self.attributes = np.vstack((self.attributes, dataset.attributes))
+        self.attribute_rep_queries = np.vstack((self.attribute_rep_queries, dataset.attribute_rep_queries))
+
+    def save_retrieval(self, directory: str, annotator_id: int):
+        """Saves the attribute output from the network with annotator_id.
+         Window size and step are saved with the network
+
+        Arguments:
+        ----------
+        directory : str
+            path to the directory where the results should be saved.
+        annotator_id : id under which to save the predictions
+        ----------
+
+        """
+
+        file_name = f"{g.windows.file_name.split('.')[0]}_A{annotator_id:0>2}_retrieval.txt"
+        path = directory + os.sep + file_name
+        dill.dump(self, open(path, "wb"))
+
+    @staticmethod
+    def load_retrieval(directory: str, annotator_id: int):
+        """Loads and returns a RetrievalData object
+
+        Arguments:
+        ----------
+        directory : str
+            path to the directory where the results are located.
+        annotator_id : id under which the predictions are saved
+        ----------
+
+        """
+
+        file_name = f"{g.windows.file_name.split('.')[0]}_A{annotator_id:0>2}_retrieval.txt"
+        path = directory + os.sep + file_name
+        if not os.path.exists(path):
+            return None
+        return dill.load(open(path, "rb"))

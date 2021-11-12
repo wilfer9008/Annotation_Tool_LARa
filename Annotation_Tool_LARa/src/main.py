@@ -16,13 +16,10 @@ from PyQt5.QtCore import pyqtSignal, Qt, QEvent
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 
-from controllers.state_correction_controller import StateCorrectionController
+from controllers import *
 from data_management import DataProcessor, WindowProcessor, WindowProcessorStates
 from dialogs import EnterIDDialog, SettingsDialog, OpenFileDialog
-from controllers.manual_annotation_controller import ManualAnnotationController
-from controllers.label_correction_controller import LabelCorrectionController
-from controllers.automatic_annotation_controller import AutomaticAnnotationController
-from controllers.prediction_revision_controller import PredictionRevisionController
+
 import global_variables as g
 
 pg.setConfigOption('background', 'w')
@@ -50,7 +47,8 @@ class GUI(QtWidgets.QMainWindow):
         # print(self.tab_widget.tabBar())
 
         self.controllers = [ManualAnnotationController(self), LabelCorrectionController(self),
-                            AutomaticAnnotationController(self), PredictionRevisionController(self)]
+                            AutomaticAnnotationController(self), PredictionRevisionController(self),
+                            RetrievalController(self)]
 
         self.annotation_guide_button = self.findChild(QtWidgets.QPushButton, 'annotationGuideButton')
         self.annotation_guide_button.clicked.connect(lambda _: self.pause())
@@ -109,16 +107,16 @@ class GUI(QtWidgets.QMainWindow):
 
         for i, controller in enumerate(controller_classes):
             self.controllers.append(controller(self))
-            #print(i, self.controllers[i])
+            # print(i, self.controllers[i])
             if self.enabled:
                 controller.enable_widgets()
 
-    def revision_mode(self, enable: bool):
+    def fixed_windows_mode(self, enable: str):
         for ctrl in self.controllers:
-            ctrl.revision_mode(enable)
+            ctrl.fixed_windows_mode(enable)
 
     def pause(self):
-        #print("pause")
+        # print("pause")
         self.playback_controller.pause()
 
     def eventFilter(self, _, event):
@@ -302,13 +300,15 @@ class PlaybackController:
             else:
                 self.current_frame = 1
             self.frame_slider.setValue(self.current_frame)
-        else:  # 'current_frame_line_edit'
+        elif source == 'current_frame_line_edit':
             self.current_frame = int(self.current_frame_line_edit.text())
             if self.current_frame > g.data.number_samples:
                 self.current_frame = g.data.number_samples
             else:
                 self.current_frame = max((self.current_frame, 1))
             self.frame_slider.setValue(self.current_frame)
+        else:
+            raise ValueError(f"Unknown source passed: {source}")
 
         self.currentFrameLabel.setText(
             f"Current Frame: {self.current_frame}/{g.data.number_samples}")
@@ -332,7 +332,7 @@ class PlaybackController:
         return self.current_frame - 1
 
     def set_start_frame(self):
-        start = str(self.gui.get_start_frame())
+        start = str(self.gui.get_start_frame()+1)
         self.current_frame_line_edit.setText(start)
         self.frame_changed('current_frame_line_edit')
 
@@ -431,7 +431,7 @@ class SkeletonGraphController:
         self.zgrid = gl.GLGridItem()
         self.graph.addItem(self.zgrid)
         floor_height = 0
-        for segment in [g.data.body_segments.reversed()[i]
+        for segment in [g.data.body_segments_reversed[i]
                         for i in ['L toe', 'R toe', 'L foot', 'R foot']]:
             segment_height = new_skeleton[segment * 2, 2]
             floor_height = min((floor_height, segment_height))
@@ -449,7 +449,7 @@ class IOController:
         self.current_file_label = self.gui.findChild(QtWidgets.QLabel, 'currentFileLabel')
 
         self.save_work_button = self.gui.findChild(QtWidgets.QPushButton, 'saveWorkButton')
-        #self.save_work_button.clicked.connect(lambda _:
+        # self.save_work_button.clicked.connect(lambda _:
         #                                      self.save_finished_progress(g.settings['saveFinishedPath']))
 
         self.settings_button = self.gui.findChild(QtWidgets.QPushButton, 'settingsButton')
@@ -484,6 +484,7 @@ class IOController:
         labeled_folder_exists = os.path.exists(g.settings['saveFinishedPath'])
         state_folder_exists = os.path.exists(g.settings['stateFinishedPath'])
         backup_folder_exists = os.path.exists(g.settings['backUpPath'])
+        network_folder_exists = os.path.exists(g.networks_path)
 
         if not all([new_folder_exists, labeled_folder_exists, state_folder_exists, backup_folder_exists]):
             message = "If you are seeing this Dialog, it means you are either "
@@ -507,6 +508,33 @@ class IOController:
             if not os.path.exists(g.settings['backUpPath']):
                 os.mkdir(g.settings['backUpPath'])
 
+        if not network_folder_exists:
+            os.mkdir(g.networks_path)
+
+            with open(f"{g.networks_path}{os.sep}readme.txt", "wt") as txt:
+                txt.write("Networks are available in:\n")
+                txt.write("https://tu-dortmund.sciebo.de/s/YkpqlYOffFrmFr0\n\n")
+                txt.write("Place the networks in this folder.")
+                txt.flush()
+
+            message = "You are missing the Neural Networks for Automatic Annotation.<br>"
+            message += f"You can download them from <a href='{g.network_download_link}'>here</a>. "
+            message += "After you downloaded them place them into the networks folder. "
+            message += "Do you wish to download them now?"
+
+            result = QtWidgets.QMessageBox.information(self.gui, 'Welcome!', message,
+                                                       QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                                       QtWidgets.QMessageBox.No)
+            if result == QtWidgets.QMessageBox.Yes:
+                webbrowser.open(g.network_download_link)
+            elif result == QtWidgets.QMessageBox.No:
+                message = "The new networks folder now contains a readme with the download link, "
+                message += "if you need to download them later."
+
+                result = QtWidgets.QMessageBox.information(self.gui, 'Welcome!', message,
+                                                           QtWidgets.QMessageBox.Ok,
+                                                           QtWidgets.QMessageBox.Ok)
+
     def reload(self, mode):
         pass
 
@@ -515,7 +543,7 @@ class IOController:
         if dlg.exec_():
             file_path, annotated, load_backup = dlg.result
             file_name = os.path.split(file_path)[1]
-            g.get_states(file_name)
+
             self.save_work_button.setEnabled(False)
             self.change_save_button_folder(annotated)
             controllers = []
@@ -523,18 +551,21 @@ class IOController:
                 controllers = [ManualAnnotationController,
                                LabelCorrectionController,
                                AutomaticAnnotationController,
-                               PredictionRevisionController]
+                               PredictionRevisionController,
+                               RetrievalController]
             elif annotated == 2:
                 controllers = [StateCorrectionController]
+                g.get_states(file_name)
             self.gui.enabled = False
             self.gui.change_setup(controllers)
             if g.windows is not None:
                 g.windows.close()
+                g.retrieval = None
 
             # TODO: add a try catch block here
             g.data = DataProcessor(file_path, annotated > 0)
-            if annotated !=2:
-                g.windows = WindowProcessor(file_path, annotated>0, load_backup)
+            if annotated != 2:
+                g.windows = WindowProcessor(file_path, annotated > 0, load_backup)
             else:
                 g.windows = WindowProcessorStates(file_path, True, load_backup)
 
@@ -551,12 +582,12 @@ class IOController:
             pass
         self.save_work_button.clicked.connect(lambda _: self.gui.pause())
         if annotated == 0 or annotated == 1:
-            #print(annotated,"saveFinished")
+            # print(annotated,"saveFinished")
             self.save_work_button.clicked.connect(lambda _:
                                                   self.save_finished_progress('Select labeled data directory',
                                                                               g.settings['saveFinishedPath']))
         elif annotated == 2:
-            #print(annotated, "stateFinished")
+            # print(annotated, "stateFinished")
             self.save_work_button.clicked.connect(lambda _:
                                                   self.save_finished_progress('Select state data directory',
                                                                               g.settings['stateFinishedPath']))

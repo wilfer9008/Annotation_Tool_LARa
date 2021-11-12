@@ -108,13 +108,14 @@ class PredictionRevisionController(Controller):
             self.select_window_by_frame(frame)
             self.highlight_class_bar(self.current_window)
             self.update_labels()
-            self.use_predictions_button.setEnabled(True)
+
+            if self.fixed_window_mode_enabled in [None, "none", "prediction_revision"]:
+                self.use_predictions_button.setEnabled(True)
         else:
             self.use_predictions_button.setEnabled(False)
 
     def new_frame(self, frame):
-        classgraphs = [self.class_graph_0, self.class_graph_1, \
-                       self.class_graph_2, self.class_graph_3]
+        classgraphs = [self.class_graph_0, self.class_graph_1, self.class_graph_2, self.class_graph_3]
         for graph in classgraphs:
             graph.update_frame_lines(play=frame)
 
@@ -126,7 +127,7 @@ class PredictionRevisionController(Controller):
             if self.current_window != window_1_index:
                 self.current_window_0 = window_0_index
                 self.current_window = window_1_index
-                self.selectWindow(window_0_index, window_1_index)
+                self.select_window(window_0_index, window_1_index)
                 self.highlight_class_bar(self.current_window)
 
     def class_window_index(self, frame):
@@ -169,12 +170,12 @@ class PredictionRevisionController(Controller):
 
             self.current_window = window_1_index
             self.current_window_0 = window_0_index
-            self.selectWindow(window_0_index, window_1_index)
+            self.select_window(window_0_index, window_1_index)
 
         else:
             self.current_window = window_1_index
 
-    def selectWindow(self, window_0_index: int, window_1_index: int):
+    def select_window(self, window_0_index: int, window_1_index: int):
         """Selects the window at window_index"""
         if window_0_index >= 0:
             self.current_window_0 = window_0_index
@@ -236,7 +237,7 @@ class PredictionRevisionController(Controller):
         self.class_graph_2.color_class_bars(colors)
         self.class_graph_3.color_class_bars(colors)
 
-        if self.revision_mode_enabled:
+        if self.fixed_window_mode_enabled == "prediction_revision":
             colors = Controller.highlight_class_bar(self, bar_index)
             self.class_graph_0.color_class_bars(colors)
         else:
@@ -245,20 +246,22 @@ class PredictionRevisionController(Controller):
 
     def use_predictions(self):
 
-        message = "This action will enable revision mode.\n\
+        message = "This action will enable fixed-window-size mode.\n\
 Any labeling done up to this point will be discarded and instead the first prediction will be used.\n\
-Some features in other modes will be disabled until revision mode is disabled again.\n\
+Some features in other modes will be disabled until fixed-window-size mode is disabled again.\n\
 You can choose between the top3 classes in here or change the labels in label correction mode."
 
         revision_mode_warning = QtWidgets.QMessageBox.question(
-            self.gui, 'Start revision mode?', message,
+            self.gui, 'Start fixed-window-size mode?', message,
             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.Cancel,
             QtWidgets.QMessageBox.Cancel)
 
         if revision_mode_warning == QtWidgets.QMessageBox.Yes:
-            self.gui.revision_mode(True)
+            g.windows.windows = [(s, e, c, [a for a in A]) for (s, e, c, A) in g.windows.windows_1]
+            g.windows.make_backup()
+            self.gui.fixed_windows_mode("prediction_revision")
 
-    def disable_revision_mode(self):
+    def disable_fixed_window_mode(self):
         message = "This will disable revision mode.\n\
 Make sure you are finished everything you need to do in this mode.\n\
 Next time you activate revision mode your unsaved progress will be lost"
@@ -269,30 +272,7 @@ Next time you activate revision mode your unsaved progress will be lost"
             QtWidgets.QMessageBox.Cancel)
 
         if revision_mode_warning == QtWidgets.QMessageBox.Yes:
-            self.gui.revision_mode(False)
-
-    def revision_mode(self, enable: bool):
-        self.revision_mode_enabled = enable
-
-        self.choose_first_button.setEnabled(enable)
-        self.choose_second_button.setEnabled(enable)
-        self.choose_third_button.setEnabled(enable)
-        self.toggle_error_button.setEnabled(enable)
-        self.set_all_error_button.setEnabled(enable)
-
-        if enable:
-            g.windows.windows = [(s, e, c, [a for a in A]) for (s, e, c, A) in g.windows.windows_1]
-            g.windows.make_backup()
-            self.use_predictions_button.clicked.disconnect()
-            self.use_predictions_button.clicked.connect(lambda _: self.disable_revision_mode())
-            self.use_predictions_button.setText("Stop revision mode")
-
-        else:
-            self.use_predictions_button.clicked.disconnect()
-            self.use_predictions_button.clicked.connect(lambda _: self.use_predictions())
-            self.use_predictions_button.setText("Use 1st Predictions")
-
-        self.reload()
+            self.gui.fixed_windows_mode("none")
 
     def choose_n_th_prediction(self, n):
         predictions = [g.windows.windows_1, g.windows.windows_2, g.windows.windows_3]
@@ -302,12 +282,39 @@ Next time you activate revision mode your unsaved progress will be lost"
         g.windows.windows[self.current_window][3][-1] = 1
         self.reload()
 
+    def fixed_windows_mode(self, mode: str):
+        self.fixed_window_mode_enabled = mode
+
+        if mode == "prediction_revision":
+            enable = True
+        else:
+            enable = False
+
+        self.choose_first_button.setEnabled(enable)
+        self.choose_second_button.setEnabled(enable)
+        self.choose_third_button.setEnabled(enable)
+        self.toggle_error_button.setEnabled(enable)
+        self.set_all_error_button.setEnabled(enable)
+
+        if enable:
+            self.use_predictions_button.clicked.disconnect()
+            self.use_predictions_button.clicked.connect(lambda _: self.disable_fixed_window_mode())
+            self.use_predictions_button.setText("Stop revision enable")
+        elif mode is None or mode == "none":
+            self.use_predictions_button.clicked.disconnect()
+            self.use_predictions_button.clicked.connect(lambda _: self.use_predictions())
+            self.use_predictions_button.setText("Use 1st Predictions")
+            self.use_predictions_button.setEnabled(True)
+        else:
+            self.use_predictions_button.setEnabled(False)
+        self.reload()
+
     def toggle_error(self):
         # print("toggling error")
 
         # prediction[self.current_window][3][-1] = 1 - prediction[self.current_window][3][-1]
         g.windows.windows[self.current_window][3][-1] = 1 \
-                                                     - g.windows.windows[self.current_window][3][-1]
+                                                        - g.windows.windows[self.current_window][3][-1]
 
         self.reload()
 
