@@ -14,3 +14,8 @@ python main.py
 in the src folder 
 
 or by running start.bat
+
+Networks are available in:
+https://tu-dortmund.sciebo.de/s/YkpqlYOffFrmFr0
+
+Place the networks in a folder called "networks"
