@@ -411,6 +411,8 @@ class Annotator(QThread):
         dataset = LabeledSlidingWindowDataset(g.data.mocap_data, window_length, window_step=window_length)
         if config['labeltype'] == 'attributes':
             g.retrieval = RetrievalData(g.data.mocap_data, window_length, window_step=window_length)
+        else:
+            g.retrieval = None
         self.progress_add.emit(1)
         # Making deep representation
         if self.deep_rep:
@@ -458,8 +460,9 @@ class Annotator(QThread):
         g.windows.windows_3 = windows_3
         g.windows.save_predictions(g.settings['saveFinishedPath'],
                                    g.networks[self.selected_network]['annotator_id'])
-        g.retrieval.save_retrieval(g.settings['saveFinishedPath'],
-                                   g.networks[self.selected_network]['annotator_id'])
+        if label_kind == 'attributes':
+            g.retrieval.save_retrieval(g.settings['saveFinishedPath'],
+                                       g.networks[self.selected_network]['annotator_id'])
 
         self.nextstep.emit("done", 0)
         self.done.emit(0)

@@ -7,7 +7,6 @@ Created on May 17, 2019
 from __future__ import print_function
 import logging
 
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -20,7 +19,6 @@ class Network(nn.Module):
     """
     classdocs
     """
-
 
     def __init__(self, config):
         """
@@ -43,11 +41,10 @@ class Network(nn.Module):
             Hx = self.config['NB_sensor_channels']
         Wx = self.config['sliding_window_length']
 
-        if self.config["fully_convolutional"] == "FCN":
+        if self.config["aggregate"] == "FCN":
             padding = [2, 0]
-        elif self.config["fully_convolutional"] == "FC":
+        elif self.config["aggregate"] == "FC":
             padding = 0
-
 
         # Computing the size of the feature maps
         Wx, Hx = self.size_feature_map(Wx=Wx,
@@ -90,14 +87,14 @@ class Network(nn.Module):
                                      kernel_size=(self.config['filter_size'], 1),
                                      stride=1, padding=padding)
 
-            if self.config["fully_convolutional"] == "FCN":
+            if self.config["aggregate"] == "FCN":
                 if self.config["reshape_input"]:
                     self.fc3 = nn.Conv2d(in_channels=self.config['num_filters'],
                                          out_channels=256, kernel_size=(1, 1), stride=1, padding=0)
                 else:
                     self.fc3 = nn.Conv2d(in_channels=self.config['num_filters'],
                                          out_channels=256, kernel_size=(1, 1), stride=1, padding=0)
-            elif self.config["fully_convolutional"] == "FC":
+            elif self.config["aggregate"] == "FC":
                 if self.config["reshape_input"]:
                     self.fc3 = nn.Linear(self.config['num_filters'] *
                                          int(Wx) * int(self.config['NB_sensor_channels'] / 3), 256)
@@ -108,24 +105,24 @@ class Network(nn.Module):
         if self.config["network"] == "cnn_imu":
             # LA
             self.conv_LA_1_1 = nn.Conv2d(in_channels=in_channels,
-                                     out_channels=self.config['num_filters'],
-                                     kernel_size=(self.config['filter_size'], 1),
-                                     stride=1, padding=padding)
+                                         out_channels=self.config['num_filters'],
+                                         kernel_size=(self.config['filter_size'], 1),
+                                         stride=1, padding=padding)
 
             self.conv_LA_1_2 = nn.Conv2d(in_channels=self.config['num_filters'],
-                                          out_channels=self.config['num_filters'],
-                                          kernel_size=(self.config['filter_size'], 1),
-                                          stride=1, padding=padding)
+                                         out_channels=self.config['num_filters'],
+                                         kernel_size=(self.config['filter_size'], 1),
+                                         stride=1, padding=padding)
 
             self.conv_LA_2_1 = nn.Conv2d(in_channels=self.config['num_filters'],
-                                          out_channels=self.config['num_filters'],
-                                          kernel_size=(self.config['filter_size'], 1),
-                                          stride=1, padding=padding)
+                                         out_channels=self.config['num_filters'],
+                                         kernel_size=(self.config['filter_size'], 1),
+                                         stride=1, padding=padding)
 
             self.conv_LA_2_2 = nn.Conv2d(in_channels=self.config['num_filters'],
-                                          out_channels=self.config['num_filters'],
-                                          kernel_size=(self.config['filter_size'], 1),
-                                          stride=1, padding=padding)
+                                         out_channels=self.config['num_filters'],
+                                         kernel_size=(self.config['filter_size'], 1),
+                                         stride=1, padding=padding)
 
             if self.config["reshape_input"]:
                 if self.config["NB_sensor_channels"] == 30:
@@ -142,24 +139,24 @@ class Network(nn.Module):
 
             # LL
             self.conv_LL_1_1 = nn.Conv2d(in_channels=in_channels,
-                                     out_channels=self.config['num_filters'],
-                                     kernel_size=(self.config['filter_size'], 1),
-                                     stride=1, padding=padding)
+                                         out_channels=self.config['num_filters'],
+                                         kernel_size=(self.config['filter_size'], 1),
+                                         stride=1, padding=padding)
 
             self.conv_LL_1_2 = nn.Conv2d(in_channels=self.config['num_filters'],
-                                          out_channels=self.config['num_filters'],
-                                          kernel_size=(self.config['filter_size'], 1),
-                                          stride=1, padding=padding)
+                                         out_channels=self.config['num_filters'],
+                                         kernel_size=(self.config['filter_size'], 1),
+                                         stride=1, padding=padding)
 
             self.conv_LL_2_1 = nn.Conv2d(in_channels=self.config['num_filters'],
-                                          out_channels=self.config['num_filters'],
-                                          kernel_size=(self.config['filter_size'], 1),
-                                          stride=1, padding=padding)
+                                         out_channels=self.config['num_filters'],
+                                         kernel_size=(self.config['filter_size'], 1),
+                                         stride=1, padding=padding)
 
             self.conv_LL_2_2 = nn.Conv2d(in_channels=self.config['num_filters'],
-                                          out_channels=self.config['num_filters'],
-                                          kernel_size=(self.config['filter_size'], 1),
-                                          stride=1, padding=padding)
+                                         out_channels=self.config['num_filters'],
+                                         kernel_size=(self.config['filter_size'], 1),
+                                         stride=1, padding=padding)
 
             if self.config["reshape_input"]:
                 if self.config["NB_sensor_channels"] == 30:
@@ -176,25 +173,24 @@ class Network(nn.Module):
 
             # N
             self.conv_N_1_1 = nn.Conv2d(in_channels=in_channels,
-                                     out_channels=self.config['num_filters'],
-                                     kernel_size=(self.config['filter_size'], 1),
-                                     stride=1, padding=padding)
+                                        out_channels=self.config['num_filters'],
+                                        kernel_size=(self.config['filter_size'], 1),
+                                        stride=1, padding=padding)
 
             self.conv_N_1_2 = nn.Conv2d(in_channels=self.config['num_filters'],
-                                          out_channels=self.config['num_filters'],
-                                          kernel_size=(self.config['filter_size'], 1),
-                                          stride=1, padding=padding)
+                                        out_channels=self.config['num_filters'],
+                                        kernel_size=(self.config['filter_size'], 1),
+                                        stride=1, padding=padding)
 
             self.conv_N_2_1 = nn.Conv2d(in_channels=self.config['num_filters'],
-                                          out_channels=self.config['num_filters'],
-                                          kernel_size=(self.config['filter_size'], 1),
-                                          stride=1, padding=padding)
+                                        out_channels=self.config['num_filters'],
+                                        kernel_size=(self.config['filter_size'], 1),
+                                        stride=1, padding=padding)
 
             self.conv_N_2_2 = nn.Conv2d(in_channels=self.config['num_filters'],
-                                          out_channels=self.config['num_filters'],
-                                          kernel_size=(self.config['filter_size'], 1),
-                                          stride=1, padding=padding)
-
+                                        out_channels=self.config['num_filters'],
+                                        kernel_size=(self.config['filter_size'], 1),
+                                        stride=1, padding=padding)
 
             if self.config["reshape_input"]:
                 if self.config["NB_sensor_channels"] == 30:
@@ -209,27 +205,26 @@ class Network(nn.Module):
                 elif self.config["NB_sensor_channels"] == 126:
                     self.fc3_N = nn.Linear(self.config['num_filters'] * int(Wx) * 18, 256)
 
-
             # RA
             self.conv_RA_1_1 = nn.Conv2d(in_channels=in_channels,
-                                     out_channels=self.config['num_filters'],
-                                     kernel_size=(self.config['filter_size'], 1),
-                                     stride=1, padding=padding)
+                                         out_channels=self.config['num_filters'],
+                                         kernel_size=(self.config['filter_size'], 1),
+                                         stride=1, padding=padding)
 
             self.conv_RA_1_2 = nn.Conv2d(in_channels=self.config['num_filters'],
-                                          out_channels=self.config['num_filters'],
-                                          kernel_size=(self.config['filter_size'], 1),
-                                          stride=1, padding=padding)
+                                         out_channels=self.config['num_filters'],
+                                         kernel_size=(self.config['filter_size'], 1),
+                                         stride=1, padding=padding)
 
             self.conv_RA_2_1 = nn.Conv2d(in_channels=self.config['num_filters'],
-                                          out_channels=self.config['num_filters'],
-                                          kernel_size=(self.config['filter_size'], 1),
-                                          stride=1, padding=padding)
+                                         out_channels=self.config['num_filters'],
+                                         kernel_size=(self.config['filter_size'], 1),
+                                         stride=1, padding=padding)
 
             self.conv_RA_2_2 = nn.Conv2d(in_channels=self.config['num_filters'],
-                                          out_channels=self.config['num_filters'],
-                                          kernel_size=(self.config['filter_size'], 1),
-                                          stride=1, padding=padding)
+                                         out_channels=self.config['num_filters'],
+                                         kernel_size=(self.config['filter_size'], 1),
+                                         stride=1, padding=padding)
 
             if self.config["reshape_input"]:
                 if self.config["NB_sensor_channels"] == 30:
@@ -246,24 +241,24 @@ class Network(nn.Module):
 
             # RL
             self.conv_RL_1_1 = nn.Conv2d(in_channels=in_channels,
-                                     out_channels=self.config['num_filters'],
-                                     kernel_size=(self.config['filter_size'], 1),
-                                     stride=1, padding=padding)
+                                         out_channels=self.config['num_filters'],
+                                         kernel_size=(self.config['filter_size'], 1),
+                                         stride=1, padding=padding)
 
             self.conv_RL_1_2 = nn.Conv2d(in_channels=self.config['num_filters'],
-                                          out_channels=self.config['num_filters'],
-                                          kernel_size=(self.config['filter_size'], 1),
-                                          stride=1, padding=padding)
+                                         out_channels=self.config['num_filters'],
+                                         kernel_size=(self.config['filter_size'], 1),
+                                         stride=1, padding=padding)
 
             self.conv_RL_2_1 = nn.Conv2d(in_channels=self.config['num_filters'],
-                                          out_channels=self.config['num_filters'],
-                                          kernel_size=(self.config['filter_size'], 1),
-                                          stride=1, padding=padding)
+                                         out_channels=self.config['num_filters'],
+                                         kernel_size=(self.config['filter_size'], 1),
+                                         stride=1, padding=padding)
 
             self.conv_RL_2_2 = nn.Conv2d(in_channels=self.config['num_filters'],
-                                          out_channels=self.config['num_filters'],
-                                          kernel_size=(self.config['filter_size'], 1),
-                                          stride=1, padding=padding)
+                                         out_channels=self.config['num_filters'],
+                                         kernel_size=(self.config['filter_size'], 1),
+                                         stride=1, padding=padding)
 
             if self.config["reshape_input"]:
                 if self.config["NB_sensor_channels"] == 30:
@@ -278,20 +273,20 @@ class Network(nn.Module):
                 elif self.config["NB_sensor_channels"] == 126:
                     self.fc3_RL = nn.Linear(self.config['num_filters'] * int(Wx) * 24, 256)
 
-        if self.config["fully_convolutional"] == "FCN":
+        if self.config["aggregate"] == "FCN":
             if self.config["network"] == "cnn":
                 self.fc4 = nn.Conv2d(in_channels=256,
                                      out_channels=256, kernel_size=(1, 1), stride=1, padding=0)
             elif self.config["network"] == "cnn_imu":
                 self.fc4 = nn.Conv2d(in_channels=256 * 5,
                                      out_channels=256, kernel_size=(1, 1), stride=1, padding=0)
-        elif self.config["fully_convolutional"] == "FC":
+        elif self.config["aggregate"] == "FC":
             if self.config["network"] == "cnn":
                 self.fc4 = nn.Linear(256, 256)
             elif self.config["network"] == "cnn_imu":
                 self.fc4 = nn.Linear(256 * 5, 256)
 
-        if self.config["fully_convolutional"] == "FCN":
+        if self.config["aggregate"] == "FCN":
             if self.config['output'] == 'softmax':
                 self.fc5 = nn.Conv2d(in_channels=256,
                                      out_channels=self.config['num_classes'], kernel_size=(1, 1), stride=1, padding=0)
@@ -299,7 +294,7 @@ class Network(nn.Module):
                 self.fc5 = nn.Conv2d(in_channels=256 * 5,
                                      out_channels=self.config['num_attributes'],
                                      kernel_size=(1, 1), stride=1, padding=0)
-        elif self.config["fully_convolutional"] == "FC":
+        elif self.config["aggregate"] == "FC":
             if self.config['output'] == 'softmax':
                 self.fc5 = nn.Linear(256, self.config['num_classes'])
             elif self.config['output'] == 'attribute':
@@ -307,13 +302,11 @@ class Network(nn.Module):
 
         self.avgpool = nn.AvgPool2d(kernel_size=[1, self.config['NB_sensor_channels']])
 
-        self.softmax = nn.Softmax()
+        self.softmax = nn.Softmax(dim=1)
 
         self.sigmoid = nn.Sigmoid()
 
         return
-
-
 
     def forward(self, x):
 
@@ -325,15 +318,15 @@ class Network(nn.Module):
         if self.config["network"] == "cnn":
             x = F.relu(self.conv1_1(x))
             x = F.relu(self.conv1_2(x))
-            #x12 = F.max_pool2d(x12, (2, 1))
+            # x12 = F.max_pool2d(x12, (2, 1))
 
             x = F.relu(self.conv2_1(x))
             x = F.relu(self.conv2_2(x))
             # x = F.max_pool2d(x, (2, 1))
 
-            if self.config["fully_convolutional"] == "FCN":
+            if self.config["aggregate"] == "FCN":
                 x = F.relu(self.fc3(x))
-            elif self.config["fully_convolutional"] == "FC":
+            elif self.config["aggregate"] == "FC":
                 # view is reshape
                 x = x.view(-1, x.size()[1] * x.size()[2] * x.size()[3])
                 x = F.relu(self.fc3(x))
@@ -459,7 +452,7 @@ class Network(nn.Module):
 
             x = torch.cat((x_LA, x_LL, x_N, x_RA, x_RL), 1)
 
-        if self.config["fully_convolutional"] == "FCN":
+        if self.config["aggregate"] == "FCN":
             x = F.dropout(x, training=self.training)
             x = F.relu(self.fc4(x))
             x = F.dropout(x, training=self.training)
@@ -471,7 +464,7 @@ class Network(nn.Module):
             x = self.avgpool(x)
             x = x.view(x.size()[0], x.size()[1], x.size()[2])
             x = x.permute(0, 2, 1)
-        elif self.config["fully_convolutional"] == "FC":
+        elif self.config["aggregate"] == "FC":
             x = F.dropout(x, training=self.training)
             x = F.relu(self.fc4(x))
             x = F.dropout(x, training=self.training)
@@ -492,38 +485,32 @@ class Network(nn.Module):
             return x, deep_fc2
         else:
             return x
-        #return x11.clone(), x12.clone(), x21.clone(), x22.clone(), x
-
-
+        # return x11.clone(), x12.clone(), x21.clone(), x22.clone(), x
 
     def init_weights(self):
         self.apply(Network._init_weights_orthonormal)
 
         return
 
-
-
     @staticmethod
     def _init_weights_orthonormal(m):
         if isinstance(m, nn.Conv2d):
-            #n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-            #m.weight.data.normal_(0, (2. / n) ** (1 / 2.0))
-            nn.init.orthogonal_(m.weight, gain = np.sqrt(2))
+            # n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+            # m.weight.data.normal_(0, (2. / n) ** (1 / 2.0))
+            nn.init.orthogonal_(m.weight, gain=np.sqrt(2))
             nn.init.constant_(m.bias.data, 0)
         if isinstance(m, nn.Linear):
-            nn.init.orthogonal_(m.weight, gain = np.sqrt(2))
+            nn.init.orthogonal_(m.weight, gain=np.sqrt(2))
             nn.init.constant_(m.bias.data, 0)
 
         return
 
+    def size_feature_map(self, Wx, Hx, F, P, S, type_layer='conv'):
 
-
-    def size_feature_map(self, Wx, Hx, F, P, S, type_layer = 'conv'):
-
-        if self.config["fully_convolutional"] == "FCN":
+        if self.config["aggregate"] == "FCN":
             Pw = P[0]
             Ph = P[1]
-        elif self.config["fully_convolutional"] == "FC":
+        elif self.config["aggregate"] == "FC":
             Pw = P
             Ph = P
 
