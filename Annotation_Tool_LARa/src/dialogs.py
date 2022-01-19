@@ -92,12 +92,12 @@ class SaveAttributesDialog(QtWidgets.QDialog):
     
     example code:
         dlg = saveAttributesDialog(QWidget)
-        result = dlg.exec_()
-    the result will be an integer, see in the method pressedButtons
-    
+        _ = dlg.exec_()
+        result = dlg.result()
+
     """
 
-    def __init__(self, parent: QtWidgets.QWidget, selected_attr: list = None):
+    def __init__(self, parent: QtWidgets.QWidget, selected_attr: list = None, allow_zero_vector=False):
         """Initializes the dialog and sets up the gui
 
         Arguments:
@@ -122,8 +122,8 @@ class SaveAttributesDialog(QtWidgets.QDialog):
         qbtn = QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
 
         self.buttonBox = QtWidgets.QDialogButtonBox(qbtn)
-        self.buttonBox.accepted.connect(lambda: self.done(self.pressed_buttons()))
-        self.buttonBox.rejected.connect(lambda: self.done(-1))
+        self.buttonBox.accepted.connect(lambda: self.done(1))
+        self.buttonBox.rejected.connect(lambda: self.done(0))
 
         self.layout.addWidget(self.buttonBox)
         self.setLayout(self.layout)
@@ -132,24 +132,31 @@ class SaveAttributesDialog(QtWidgets.QDialog):
             for i, attr_val in enumerate(selected_attr):
                 self.attributeButtons[i].setChecked(attr_val)
 
-    def pressed_buttons(self) -> int:
+        if not allow_zero_vector:
+            self.enable_ok_button()
+            for button in self.attributeButtons:
+                button.clicked.connect(lambda _: self.enable_ok_button())
+
+    def enable_ok_button(self):
+        if any(self.result()):
+            self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(True)
+        else:
+            self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(False)
+
+
+    def result(self) -> int:
         """Checks which buttons are currently checked
         
         Returns:
         --------
         attr_int : int
-            the list of buttons gets transformed into a boolean list 
-            by checking their isChecked() state. This boolean list then gets interpreted 
-            as an integer because QDialog.done(r) asks for integers
-            it can be converted back to a boolean list later when needed
+            the list of buttons gets transformed into a boolean list by checking their isChecked() state.
         --------
         """
         pressed_buttons = []
         for button in self.attributeButtons:
-            pressed_buttons.append(button.isChecked())
-        # print(pressed_buttons)
-        attr_int = sum(2 ** i for i, v in enumerate(reversed(pressed_buttons)) if v)
-        return attr_int
+            pressed_buttons.append(button.isChecked() + 0)
+        return pressed_buttons
 
 
 class SettingsDialog(QtWidgets.QDialog):
@@ -495,8 +502,7 @@ class OpenFileDialog(QtWidgets.QDialog):
             message = 'Select an _norm_data.csv file'
             filter_ = 'CSV Files (*norm_data.csv)'
 
-        file, _ = QtWidgets.QFileDialog.getOpenFileName(self,
-                                                        message, directory, filter_, '')
+        file, _ = QtWidgets.QFileDialog.getOpenFileName(self, message, directory, filter_, '')
 
         if file != '':
             self.path_lineEdit.setText(file)

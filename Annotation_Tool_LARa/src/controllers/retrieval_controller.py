@@ -214,7 +214,7 @@ class RetrievalController(Controller):
             if self.gui.playback_controller.speed > 0:
                 return max(0, s - int(self.before_lineEdit.text()))
             else:
-                return min(g.data.number_samples - 1, e + int(self.after_lineEdit.text()))-1
+                return min(g.data.number_samples - 1, e + int(self.after_lineEdit.text())) - 1
         else:
             return 0
 
@@ -350,6 +350,14 @@ class RetrievalController(Controller):
         self.reload()
 
     def get_annotation_index(self, retrieval_index=0):
+        """Calculates the networks window index based on the retrieval window index
+
+        Since the network merges its prediction windows when the top3 predictions match it has fewer windows
+        than the retrieval mode which keeps the windows at the networks output size.
+        Therefore this method has to be used to convert retrieval index to the automatic annotation index.
+
+        """
+
         s, e = self.retrieved_list[retrieval_index]["range"]
         m = (s + e) / 2
         for i in range(len(g.windows.windows_1)):

@@ -299,7 +299,7 @@ Next time you activate revision mode your unsaved progress will be lost"
         if enable:
             self.use_predictions_button.clicked.disconnect()
             self.use_predictions_button.clicked.connect(lambda _: self.disable_fixed_window_mode())
-            self.use_predictions_button.setText("Stop revision enable")
+            self.use_predictions_button.setText("Stop revision mode")
         elif mode is None or mode == "none":
             self.use_predictions_button.clicked.disconnect()
             self.use_predictions_button.clicked.connect(lambda _: self.use_predictions())

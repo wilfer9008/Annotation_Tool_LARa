@@ -332,7 +332,7 @@ class PlaybackController:
         return self.current_frame - 1
 
     def set_start_frame(self):
-        start = str(self.gui.get_start_frame()+1)
+        start = str(self.gui.get_start_frame() + 1)
         self.current_frame_line_edit.setText(start)
         self.frame_changed('current_frame_line_edit')
 
@@ -544,8 +544,6 @@ class IOController:
             file_path, annotated, load_backup = dlg.result
             file_name = os.path.split(file_path)[1]
 
-            self.save_work_button.setEnabled(False)
-            self.change_save_button_folder(annotated)
             controllers = []
             if annotated == 0 or annotated == 1:
                 controllers = [ManualAnnotationController,
@@ -569,6 +567,8 @@ class IOController:
             else:
                 g.windows = WindowProcessorStates(file_path, True, load_backup)
 
+            self.save_work_button.setEnabled(False)
+            self.change_save_button_folder(annotated)
             self.current_file_label.setText(f"Current File: {file_name}")
             self.gui.enable_widgets()
 

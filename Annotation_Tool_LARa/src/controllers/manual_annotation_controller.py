@@ -34,7 +34,7 @@ class ManualAnnotationController(Controller):
 
         self.save_labels_button = self.widget.findChild(QtWidgets.QPushButton, 'saveLabelsButton')
         self.save_labels_button.clicked.connect(lambda _: self.gui.pause())
-        self.save_labels_button.clicked.connect(lambda _: self.saveLabel())
+        self.save_labels_button.clicked.connect(lambda _: self.save_label())
 
         self.verify_labels_button = self.widget.findChild(QtWidgets.QPushButton, 'verifyLabelsButton')
         self.verify_labels_button.clicked.connect(lambda _: self.gui.pause())
@@ -42,8 +42,8 @@ class ManualAnnotationController(Controller):
 
         self.combobox = self.widget.findChild(QtWidgets.QComboBox, 'jointSelectionBox')
 
-        joint_graph_names = ['jointGraphRX', 'jointGraphRY', 'jointGraphRZ', 'jointGraphTX', 'jointGraphTY',
-                             'jointGraphTZ']
+        joint_graph_names = ['jointGraphRX', 'jointGraphRY', 'jointGraphRZ',
+                             'jointGraphTX', 'jointGraphTY', 'jointGraphTZ']
         self.joint_graphs = []
         for graph in joint_graph_names:
             self.joint_graphs.append(self.widget.findChild(pg.PlotWidget, graph))
@@ -131,7 +131,7 @@ class ManualAnnotationController(Controller):
             self.current_window = window_index
             self.highlight_class_bar(window_index)
 
-    def highlight_class_bar(self, bar_index):
+    def highlight_class_bar(self, bar_index, **kwargs):
         colors = Controller.highlight_class_bar(self, bar_index)
 
         self.class_graph.color_class_bars(colors)
@@ -141,7 +141,7 @@ class ManualAnnotationController(Controller):
         for graph in self.joint_graphs:
             graph.update_frame_lines(start, end, play)
 
-    def saveLabel(self):
+    def save_label(self):
         # print("save")
         start = int(self.start_line_edit.text())
         end = int(self.end_line_edit.text())
@@ -151,11 +151,10 @@ class ManualAnnotationController(Controller):
             if class_index > -1:
                 dlg = SaveAttributesDialog(self.gui)
                 attribute_int = dlg.exec_()
-                if attribute_int > -1:
-                    format_string = '{0:0' + str(len(g.attributes)) + 'b}'
-                    attributes = [(x == '1') + 0 for x in list(format_string.format(attribute_int))]
-                    g.windows.save_window(start - 1, end, class_index,
-                                       attributes)  # Subtracting 1 from start to index windows from 0.
+                if attribute_int:
+                    attributes = dlg.result()
+                    g.windows.save_window(start - 1, end, # Subtracting 1 from start to index windows from 0.
+                                          class_index, attributes)
                     # End is the same because indexing a:b is equivalent to [a,b[.
                     self.start_line_edit.setText(str(end + 1))  # End+1 because next window will save as start-1=end.
                     self.end_line_edit.setText(str(end + 1))
