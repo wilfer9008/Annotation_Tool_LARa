@@ -7,7 +7,7 @@ And
 # ICPR20:From Human Pose to On Body Devices for Human Activity Recognition
 Implementation code for "From Human Pose to On Body Devices for Human Activity Recognition, see https://ieeexplore.ieee.org/document/9412283
 
-# ARDUOUS2022:Retrieval-based Annotation of Multi-channel Time-Series Data for HAR
+# ARDUOUS2022: Retrieval-based Annotation of Multi-channel Time-Series Data for HAR
 Implementation code for "Retrieval-based Annotation of Multi-channel Time-Series Data for HAR, see https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=9767355
 
 ## Prerequisites
