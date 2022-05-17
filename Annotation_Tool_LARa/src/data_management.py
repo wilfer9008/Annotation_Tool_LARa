@@ -369,7 +369,7 @@ class WindowProcessor:
 
     def load_annotations(self, file_path):
         directory, data_name = os.path.split(file_path)
-        window_name_parts = data_name.split('_')[:5]
+        window_name_parts = data_name.split('_')[:-2]
         window_name_parts.append("windows.txt")
         window_name = window_name_parts[0]
 

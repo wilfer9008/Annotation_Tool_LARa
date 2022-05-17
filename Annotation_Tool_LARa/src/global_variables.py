@@ -72,4 +72,4 @@ networks = {1: {'name': 'tCNN_softmax',
 annotation_guide_link = "https://docs.google.com/document/d/1RNahPI2sCZdx1Iy0Gfp-ALjFgd_e-AKnU78_DubN7iU/edit"
 network_download_link = "https://tu-dortmund.sciebo.de/s/YkpqlYOffFrmFr0"
 
-version = "230"
+version = "231"
