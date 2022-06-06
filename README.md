@@ -21,7 +21,7 @@ The implementation is done in Python 3.7:
 
 -PyQt5
 
--pygtgraph
+-pygtgraph<=0.12.2
 
 -pytorch
 
